@@ -2,9 +2,13 @@
 REM Cheeky QEMU Launcher for Windows
 REM Downloads and runs the Cheeky image in QEMU
 REM
-REM Environment variables:
-REM   CHEEKY_QEMU_DIR - Directory containing QEMU files (default: script directory)
-REM   CHEEKY_WORK_DIR - Working directory for images (default: script directory)
+REM Usage:
+REM   start-qemu.bat [QEMU_DIR]
+REM
+REM Arguments:
+REM   QEMU_DIR - Directory containing QEMU files (default: script directory)
+REM
+REM The working directory is always the current directory where the script is run from.
 
 setlocal enabledelayedexpansion
 
@@ -14,18 +18,15 @@ set IMAGE_FILE=cheeky-armv8-%VERSION%.img
 set IMAGE_XZ=%IMAGE_FILE%.xz
 set IMAGE_URL=https://github.com/%REPO%/releases/download/%VERSION%/%IMAGE_XZ%
 
-REM Set directories (use environment variables if set, otherwise use script directory)
-if defined CHEEKY_QEMU_DIR (
-    set "QEMU_DIR=%CHEEKY_QEMU_DIR%"
-) else (
+REM Set QEMU directory from parameter or default to script directory
+if "%~1"=="" (
     set "QEMU_DIR=%~dp0"
+) else (
+    set "QEMU_DIR=%~1"
 )
 
-if defined CHEEKY_WORK_DIR (
-    set "WORK_DIR=%CHEEKY_WORK_DIR%"
-) else (
-    set "WORK_DIR=%~dp0"
-)
+REM Working directory is current directory
+set "WORK_DIR=%cd%"
 
 echo ==========================================
 echo Cheeky QEMU Launcher for Windows
@@ -45,9 +46,6 @@ if not exist "%QEMU_DIR%\qemu-system-aarch64.exe" (
     pause
     exit /b 1
 )
-
-REM Change to work directory
-cd /d "%WORK_DIR%" || exit /b 1
 
 REM Download image if needed
 if not exist "%IMAGE_FILE%" (

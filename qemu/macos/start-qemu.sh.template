@@ -3,9 +3,13 @@
 # Downloads and runs the Cheeky image in QEMU
 # No complex setup required - just run this script!
 #
-# Environment variables:
-#   CHEEKY_QEMU_DIR - Directory containing QEMU files (default: script directory)
-#   CHEEKY_WORK_DIR - Working directory for images (default: script directory)
+# Usage:
+#   ./start-qemu.sh [QEMU_DIR]
+#
+# Arguments:
+#   QEMU_DIR - Directory containing QEMU files (default: script directory)
+#
+# The working directory is always the current directory where the script is run from.
 
 set -e
 
@@ -16,8 +20,8 @@ IMAGE_XZ="${IMAGE_FILE}.xz"
 IMAGE_URL="https://github.com/${REPO}/releases/download/${VERSION}/${IMAGE_XZ}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-QEMU_DIR="${CHEEKY_QEMU_DIR:-$SCRIPT_DIR}"
-WORK_DIR="${CHEEKY_WORK_DIR:-$SCRIPT_DIR}"
+QEMU_DIR="${1:-$SCRIPT_DIR}"
+WORK_DIR="$(pwd)"
 
 echo "=========================================="
 echo "Cheeky QEMU Launcher"
@@ -37,9 +41,6 @@ if ! command -v qemu-system-aarch64 &> /dev/null; then
     echo ""
     exit 1
 fi
-
-# Change to work directory
-cd "$WORK_DIR" || exit 1
 
 # Download image if needed
 if [ ! -f "$IMAGE_FILE" ]; then
