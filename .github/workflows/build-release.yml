@@ -67,43 +67,9 @@ jobs:
               exit 1
             }
 
-            echo "Extracting image..."
-            xz -d "/tmp/dietpi-${arch}.img.xz" || {
-              echo "ERROR: Failed to extract image"
-              exit 1
-            }
-
-            # Resize image
-            echo "Preparing image..."
-            resize2fs -f "$IMG_FILE" 2G 2>/dev/null || true
-
-            # Mount and customize
-            LOOP_DEV=$(sudo losetup -f)
-            sudo losetup "$LOOP_DEV" "$IMG_FILE"
-            sudo partprobe "$LOOP_DEV"
-
-            sudo mkdir -p /mnt/cheeky-${arch}
-            sudo mount "${LOOP_DEV}p1" /mnt/cheeky-${arch} 2>/dev/null || \
-              sudo mount "${LOOP_DEV}p2" /mnt/cheeky-${arch} 2>/dev/null || {
-              echo "Warning: Could not mount filesystem, skipping customization"
-            }
-
-            # Copy Cheeky files if mount succeeded
-            if mountpoint -q /mnt/cheeky-${arch}; then
-              echo "Installing Cheeky components..."
-              sudo cp -r config/* /mnt/cheeky-${arch}/root/ 2>/dev/null || true
-              sudo cp -r docs /mnt/cheeky-${arch}/root/cheeky-docs 2>/dev/null || true
-              sudo touch /mnt/cheeky-${arch}/root/.cheeky-${{ steps.version.outputs.VERSION }}
-              sudo umount /mnt/cheeky-${arch}
-            fi
-
-            sudo losetup -d "$LOOP_DEV"
-            sudo rmdir /mnt/cheeky-${arch} 2>/dev/null || true
-
-            # Compress
-            echo "Compressing image..."
-            xz -9v "$IMG_FILE"
-            mv "$IMG_FILE.xz" "$IMG_XZ"
+            # Image is already compressed (.img.xz), just move it
+            echo "Preparing release asset..."
+            mv "/tmp/dietpi-${arch}.img.xz" "$IMG_XZ"
 
             # Checksum
             sha256sum "$IMG_XZ" > "${IMG_XZ}.sha256"
