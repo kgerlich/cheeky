@@ -14,21 +14,24 @@ setlocal enabledelayedexpansion
 
 set VERSION=VERSION_PLACEHOLDER
 set REPO=REPO_PLACEHOLDER
-set IMAGE_FILE=cheeky-armv8-%VERSION%.img
-set IMAGE_XZ=%IMAGE_FILE%.xz
-set IMAGE_URL=https://github.com/%REPO%/releases/download/%VERSION%/%IMAGE_XZ%
+set IMAGE_FILE=cheeky-armv8-!VERSION!.img
+set IMAGE_XZ=!IMAGE_FILE!.xz
+set IMAGE_URL=https://github.com/!REPO!/releases/download/!VERSION!/!IMAGE_XZ!
 
 REM Set QEMU directory from parameter or default to script directory
 if "%~1"=="" (
-    set "QEMU_DIR=%~dp0"
+    set QEMU_DIR=%~dp0
 ) else (
-    REM Remove trailing backslash if present
-    set "QEMU_DIR=%~1"
-    if "!QEMU_DIR:~-1!"=="\" set "QEMU_DIR=!QEMU_DIR:~0,-1!"
+    set QEMU_DIR=%~1
+)
+
+REM Remove trailing backslash if present
+if "!QEMU_DIR:~-1!"=="\" (
+    set QEMU_DIR=!QEMU_DIR:~0,-1!
 )
 
 REM Working directory is current directory
-set "WORK_DIR=%cd%"
+set WORK_DIR=%cd%
 
 echo ==========================================
 echo Cheeky QEMU Launcher for Windows
@@ -39,7 +42,7 @@ echo Work Dir: !WORK_DIR!
 echo.
 
 REM Check if QEMU exists
-set "QEMU_EXE=!QEMU_DIR!\qemu-system-aarch64.exe"
+set QEMU_EXE=!QEMU_DIR!\qemu-system-aarch64.exe
 if not exist "!QEMU_EXE!" (
     echo Error: QEMU not found
     echo Expected: !QEMU_EXE!
@@ -52,11 +55,11 @@ if not exist "!QEMU_EXE!" (
 )
 
 REM Download image if needed
-if not exist "%IMAGE_FILE%" (
-    if not exist "%IMAGE_XZ%" (
+if not exist "!IMAGE_FILE!" (
+    if not exist "!IMAGE_XZ!" (
         echo Downloading Cheeky image (~180MB)...
-        echo From: %IMAGE_URL%
-        powershell -Command "Invoke-WebRequest -Uri '%IMAGE_URL%' -OutFile '%IMAGE_XZ%'" || (
+        echo From: !IMAGE_URL!
+        powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_XZ!'" || (
             echo Download failed
             pause
             exit /b 1
@@ -64,7 +67,7 @@ if not exist "%IMAGE_FILE%" (
     )
 
     echo Extracting image...
-    7z x "%IMAGE_XZ%"
+    7z x "!IMAGE_XZ!"
     if !errorlevel! neq 0 (
         echo Extraction failed
         pause
@@ -73,10 +76,10 @@ if not exist "%IMAGE_FILE%" (
 )
 
 REM Resize image if needed
-if not exist "%IMAGE_FILE%.resized" (
+if not exist "!IMAGE_FILE!.resized" (
     echo Resizing image...
-    "!QEMU_DIR!\qemu-img.exe" resize "%IMAGE_FILE%" +2G
-    type nul > "%IMAGE_FILE%.resized"
+    "!QEMU_DIR!\qemu-img.exe" resize "!IMAGE_FILE!" +2G
+    type nul > "!IMAGE_FILE!.resized"
 )
 
 echo.
@@ -96,7 +99,7 @@ REM Run QEMU with port forwarding
     -m 2048 ^
     -kernel "!QEMU_DIR!\kernel-qemu" ^
     -append "root=/dev/vda2 rootfstype=ext4 rw console=ttyAMA0" ^
-    -drive file="%IMAGE_FILE%",if=none,format=raw,id=hd ^
+    -drive file="!IMAGE_FILE!",if=none,format=raw,id=hd ^
     -device virtio-blk-device,drive=hd ^
     -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22 ^
     -device virtio-net-device,netdev=net0 ^
