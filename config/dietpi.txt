@@ -1,0 +1,28 @@
+# DietPi Configuration File for Cheeky
+# Edit this before first boot to customize initial setup
+# See https://dietpi.com/docs for full documentation
+
+#=== Root Password ===
+ROOT_USER_PASSWORD=raspberry
+
+#=== Network ===
+BOOT_WAIT_FOR_NETWORK=1
+# WiFi is configured via dietpi-wifi.txt if needed
+
+#=== Language & Locale ===
+AUTO_SETUP_LOCALE=en_US.UTF-8
+AUTO_SETUP_TIMEZONE=UTC
+
+#=== Logging ===
+DIETPI_SURVEY_OPTED_OUT=1
+
+#=== Auto Login ===
+AUTO_UNMASK_LOGIND=1
+
+#=== Software Installation ===
+# Set to 0 to skip auto-install
+AUTO_SETUP_RUN=1
+
+# Cheeky-specific settings
+# These will be configured by Automation_Custom_Script.sh
+CHEEKY_VERSION=1.0.0

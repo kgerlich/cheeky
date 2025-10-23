@@ -1,0 +1,79 @@
+#!/bin/bash
+# Cheeky QEMU Launcher for Linux/macOS
+# Downloads and runs the Cheeky image in QEMU
+# No complex setup required - just run this script!
+
+set -e
+
+VERSION="VERSION_PLACEHOLDER"
+REPO="REPO_PLACEHOLDER"
+IMAGE_FILE="cheeky-armv8-${VERSION}.img"
+IMAGE_XZ="${IMAGE_FILE}.xz"
+IMAGE_URL="https://github.com/${REPO}/releases/download/${VERSION}/${IMAGE_XZ}"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo "=========================================="
+echo "🍑 Cheeky QEMU Launcher"
+echo "=========================================="
+echo ""
+
+# Check QEMU is installed
+if ! command -v qemu-system-aarch64 &> /dev/null; then
+    echo "❌ Error: QEMU is not installed"
+    echo ""
+    echo "Install QEMU:"
+    echo "  Linux (Ubuntu/Debian): sudo apt-get install qemu-system-arm"
+    echo "  macOS: brew install qemu"
+    echo ""
+    exit 1
+fi
+
+# Download image if needed
+if [ ! -f "$IMAGE_FILE" ]; then
+    if [ ! -f "$IMAGE_XZ" ]; then
+        echo "📥 Downloading Cheeky image (~180MB)..."
+        echo "   From: $IMAGE_URL"
+        wget -q --show-progress "$IMAGE_URL" || {
+            echo "❌ Download failed"
+            exit 1
+        }
+    fi
+
+    echo "📦 Extracting image..."
+    xz -d "$IMAGE_XZ" || {
+        echo "❌ Extraction failed"
+        exit 1
+    }
+fi
+
+# Resize image to add space
+if [ ! -f "${IMAGE_FILE}.resized" ]; then
+    echo "📏 Resizing image..."
+    qemu-img resize "$IMAGE_FILE" +2G
+    touch "${IMAGE_FILE}.resized"
+fi
+
+echo ""
+echo "🚀 Starting QEMU..."
+echo "   This may take 30-60 seconds to boot"
+echo ""
+
+# Run QEMU with port forwarding
+qemu-system-aarch64 \
+    -machine virt \
+    -cpu cortex-a72 \
+    -m 2048 \
+    -kernel "$SCRIPT_DIR/kernel-qemu" \
+    -append "root=/dev/vda2 rootfstype=ext4 rw console=ttyAMA0" \
+    -drive "file=$IMAGE_FILE,if=none,format=raw,id=hd" \
+    -device virtio-blk-device,drive=hd \
+    -netdev "user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22" \
+    -device virtio-net-device,netdev=net0 \
+    -nographic \
+    -serial mon:stdio
+
+echo ""
+echo "=========================================="
+echo "QEMU has exited"
+echo "=========================================="

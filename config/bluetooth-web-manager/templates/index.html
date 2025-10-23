@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheeky Bluetooth Manager 🍑</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🍑</text></svg>">
+</head>
+<body class="bg-gradient-to-br from-pink-50 to-green-50 min-h-screen">
+    <div x-data="bluetoothManager()" x-init="init()" class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-pink-600 mb-2">🍑 Cheeky Bluetooth Manager</h1>
+            <p class="text-gray-600">Manage your Bluetooth speakers without SSH</p>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="mb-6 p-4 bg-white rounded-lg shadow">
+            <div class="flex justify-between items-center">
+                <div>
+                    <span class="text-sm text-gray-600">Bluetooth Status:</span>
+                    <span x-show="btStatus.powered" class="ml-2 text-green-600 font-semibold">✓ Connected</span>
+                    <span x-show="!btStatus.powered" class="ml-2 text-red-600 font-semibold">✗ Disabled</span>
+                </div>
+                <button @click="scanDevices()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">
+                    🔍 Scan for Speakers
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading indicator -->
+        <div x-show="loading" class="mb-4 p-4 bg-blue-100 rounded border border-blue-300 text-blue-700">
+            Loading devices...
+        </div>
+
+        <!-- Error messages -->
+        <template x-if="error">
+            <div class="mb-4 p-4 bg-red-100 rounded border border-red-300 text-red-700">
+                <strong>Error:</strong> <span x-text="error"></span>
+                <button @click="error = null" class="ml-4 text-red-600 font-bold">✕</button>
+            </div>
+        </template>
+
+        <!-- Devices Grid -->
+        <div class="grid gap-4">
+            <template x-if="devices.length === 0">
+                <div class="p-8 bg-white rounded-lg shadow text-center">
+                    <p class="text-gray-500 mb-4">No Bluetooth speakers paired yet</p>
+                    <button @click="scanDevices()" class="px-6 py-2 bg-pink-500 text-white rounded hover:bg-pink-600">
+                        Find a Speaker
+                    </button>
+                </div>
+            </template>
+
+            <template x-for="device in devices" :key="device.mac">
+                <div class="p-4 bg-white rounded-lg shadow hover:shadow-lg transition">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800" x-text="device.name || 'Unknown Device'"></h3>
+                            <p class="text-sm text-gray-500 font-mono" x-text="device.mac"></p>
+                        </div>
+                        <div class="flex gap-2">
+                            <span x-show="device.connected" class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                                🔊 Connected
+                            </span>
+                            <span x-show="!device.connected && device.paired" class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
+                                💾 Paired
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-2 flex-wrap">
+                        <button
+                            x-show="device.paired && !device.connected"
+                            @click="connectDevice(device.mac)"
+                            class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition text-sm">
+                            Connect
+                        </button>
+
+                        <button
+                            x-show="device.connected"
+                            @click="disconnectDevice(device.mac)"
+                            class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm">
+                            Disconnect
+                        </button>
+
+                        <button
+                            @click="removeDevice(device.mac)"
+                            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Discovered devices during scan -->
+        <template x-if="scanning && availableDevices.length > 0">
+            <div class="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+                <h2 class="text-2xl font-bold text-blue-900 mb-4">📡 Discovered Speakers</h2>
+                <div class="grid gap-3">
+                    <template x-for="device in availableDevices" :key="device.mac">
+                        <div class="p-3 bg-white rounded border border-blue-200 flex justify-between items-center">
+                            <div>
+                                <p class="font-semibold text-gray-800" x-text="device.name || 'Unknown'"></p>
+                                <p class="text-xs text-gray-500 font-mono" x-text="device.mac"></p>
+                            </div>
+                            <button
+                                @click="pairDevice(device.mac)"
+                                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm">
+                                Pair
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- Footer -->
+        <div class="mt-12 text-center text-gray-600 text-sm">
+            <p>🍑 Cheeky Bluetooth Manager v1.0.0</p>
+            <p>
+                <a href="http://raspberrypi.local:6680" class="text-pink-600 hover:underline">
+                    Go to Radio Interface →
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function bluetoothManager() {
+            return {
+                devices: [],
+                availableDevices: [],
+                btStatus: { powered: false },
+                loading: true,
+                scanning: false,
+                error: null,
+
+                async init() {
+                    await this.loadDevices();
+                    await this.loadStatus();
+                    this.loading = false;
+                    // Refresh devices every 5 seconds
+                    setInterval(() => this.loadDevices(), 5000);
+                },
+
+                async loadDevices() {
+                    try {
+                        const response = await fetch('/api/devices');
+                        if (response.ok) {
+                            this.devices = await response.json();
+                        }
+                    } catch (e) {
+                        console.error('Failed to load devices:', e);
+                    }
+                },
+
+                async loadStatus() {
+                    try {
+                        const response = await fetch('/api/status');
+                        if (response.ok) {
+                            this.btStatus = await response.json();
+                        }
+                    } catch (e) {
+                        console.error('Failed to load status:', e);
+                    }
+                },
+
+                async scanDevices() {
+                    try {
+                        this.scanning = true;
+                        this.error = null;
+                        await fetch('/api/devices/scan', { method: 'POST' });
+                        await new Promise(r => setTimeout(r, 3000)); // Wait 3 seconds for scan
+                        await this.loadDevices();
+                    } catch (e) {
+                        this.error = 'Failed to scan for devices';
+                        console.error(e);
+                    } finally {
+                        this.scanning = false;
+                    }
+                },
+
+                async pairDevice(mac) {
+                    try {
+                        this.error = null;
+                        const response = await fetch('/api/devices/pair', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ mac })
+                        });
+                        if (response.ok) {
+                            await this.loadDevices();
+                        } else {
+                            this.error = 'Failed to pair device';
+                        }
+                    } catch (e) {
+                        this.error = 'Connection error: ' + e.message;
+                    }
+                },
+
+                async connectDevice(mac) {
+                    try {
+                        this.error = null;
+                        const response = await fetch('/api/devices/connect', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ mac })
+                        });
+                        if (response.ok) {
+                            await this.loadDevices();
+                        } else {
+                            this.error = 'Failed to connect';
+                        }
+                    } catch (e) {
+                        this.error = 'Connection error: ' + e.message;
+                    }
+                },
+
+                async disconnectDevice(mac) {
+                    try {
+                        this.error = null;
+                        const response = await fetch('/api/devices/disconnect', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ mac })
+                        });
+                        if (response.ok) {
+                            await this.loadDevices();
+                        } else {
+                            this.error = 'Failed to disconnect';
+                        }
+                    } catch (e) {
+                        this.error = 'Connection error: ' + e.message;
+                    }
+                },
+
+                async removeDevice(mac) {
+                    if (!confirm('Remove this speaker?')) return;
+                    try {
+                        this.error = null;
+                        const response = await fetch('/api/devices/remove', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ mac })
+                        });
+                        if (response.ok) {
+                            await this.loadDevices();
+                        } else {
+                            this.error = 'Failed to remove device';
+                        }
+                    } catch (e) {
+                        this.error = 'Connection error: ' + e.message;
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+</html>

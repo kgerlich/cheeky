@@ -1,0 +1,85 @@
+@echo off
+REM Cheeky QEMU Launcher for Windows
+REM Downloads and runs the Cheeky image in QEMU
+
+setlocal enabledelayedexpansion
+
+set VERSION=VERSION_PLACEHOLDER
+set REPO=REPO_PLACEHOLDER
+set IMAGE_FILE=cheeky-armv8-%VERSION%.img
+set IMAGE_XZ=%IMAGE_FILE%.xz
+set IMAGE_URL=https://github.com/%REPO%/releases/download/%VERSION%/%IMAGE_XZ%
+
+echo ==========================================
+echo 🍑 Cheeky QEMU Launcher for Windows
+echo ==========================================
+echo.
+
+REM Check if QEMU exists
+if not exist "qemu\qemu-system-aarch64.exe" (
+    echo Error: QEMU not found in qemu\ directory
+    echo.
+    echo Please download QEMU from https://qemu.weilnetz.de/
+    echo Extract to a 'qemu' folder in this directory
+    echo.
+    pause
+    exit /b 1
+)
+
+REM Download image if needed
+if not exist "%IMAGE_FILE%" (
+    if not exist "%IMAGE_XZ%" (
+        echo Downloading Cheeky image (~180MB)...
+        echo From: %IMAGE_URL%
+        powershell -Command "Invoke-WebRequest -Uri '%IMAGE_URL%' -OutFile '%IMAGE_XZ%'" || (
+            echo Download failed
+            pause
+            exit /b 1
+        )
+    )
+
+    echo Extracting image...
+    7z x "%IMAGE_XZ%"
+    if !errorlevel! neq 0 (
+        echo Extraction failed
+        pause
+        exit /b 1
+    )
+)
+
+REM Resize image if needed
+if not exist "%IMAGE_FILE%.resized" (
+    echo Resizing image...
+    qemu\qemu-img.exe resize "%IMAGE_FILE%" +2G
+    type nul > "%IMAGE_FILE%.resized"
+)
+
+echo.
+echo Starting QEMU...
+echo This may take 30-60 seconds to boot
+echo.
+echo Once booted, open in your browser:
+echo   Radio: http://localhost:6680
+echo   Bluetooth Manager: http://localhost:8080
+echo   SSH: ssh -p 2222 root@localhost (password: raspberry)
+echo.
+
+REM Run QEMU with port forwarding
+qemu\qemu-system-aarch64.exe ^
+    -machine virt ^
+    -cpu cortex-a72 ^
+    -m 2048 ^
+    -kernel kernel-qemu ^
+    -append "root=/dev/vda2 rootfstype=ext4 rw console=ttyAMA0" ^
+    -drive file="%IMAGE_FILE%",if=none,format=raw,id=hd ^
+    -device virtio-blk-device,drive=hd ^
+    -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22 ^
+    -device virtio-net-device,netdev=net0 ^
+    -serial mon:stdio
+
+echo.
+echo ==========================================
+echo QEMU has exited
+echo ==========================================
+echo.
+pause

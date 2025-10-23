@@ -1,0 +1,4 @@
+# DietPi Version Pinning
+# Used to track which versions are being used for reproducible builds
+
+DIETPI_BOOKWORM_VERSION=20240101
