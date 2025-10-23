@@ -49,7 +49,7 @@ jobs:
           sudo apt-get install -y p7zip-full kpartx qemu-user-static parted xz-utils dosfstools wget curl
       
       - name: Cache DietPi base
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: base-images/
           key: dietpi-${{ matrix.arch }}-${{ hashFiles('scripts/versions.txt') }}
@@ -91,7 +91,7 @@ jobs:
           md5sum ${{ matrix.output_name }}-*.img.xz > ${{ matrix.output_name }}-${{ steps.version.outputs.VERSION }}.img.xz.md5
       
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.output_name }}-image
           path: |
@@ -150,7 +150,7 @@ jobs:
           cd windows && zip -r ../cheeky-qemu-windows-${VERSION}.zip . && cd ..
       
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: qemu-bundles
           path: qemu-build/*.{tar.gz,zip}
@@ -166,7 +166,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       
       - name: Create release
         uses: softprops/action-gh-release@v1
