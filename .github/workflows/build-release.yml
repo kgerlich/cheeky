@@ -67,9 +67,50 @@ jobs:
               exit 1
             }
 
-            # Image is already compressed (.img.xz), just move it
-            echo "Preparing release asset..."
-            mv "/tmp/dietpi-${arch}.img.xz" "$IMG_XZ"
+            # Extract image for customization
+            echo "Extracting image for customization..."
+            xz -d "/tmp/dietpi-${arch}.img.xz"
+
+            # Mount using fdisk to find partition offset
+            echo "Mounting filesystem..."
+            LOOP_DEV=$(sudo losetup -f)
+            sudo losetup "$LOOP_DEV" "$IMG_FILE"
+
+            # Use fdisk to find the partition offset (usually sector 2048 for partition 2)
+            PARTITION_START=$(sudo fdisk -lu "$LOOP_DEV" | grep "${LOOP_DEV}p2" | awk '{print $2}')
+            OFFSET=$((PARTITION_START * 512))
+
+            # Mount with offset
+            sudo mkdir -p /mnt/cheeky-${arch}
+            sudo mount -o loop,offset=$OFFSET "$IMG_FILE" /mnt/cheeky-${arch}
+
+            if mountpoint -q /mnt/cheeky-${arch}; then
+              echo "Installing Cheeky components..."
+
+              # Copy configuration files
+              sudo cp -r config/bluetooth-web-manager /mnt/cheeky-${arch}/root/ 2>/dev/null || true
+              sudo cp -r config/mopidy.conf /mnt/cheeky-${arch}/root/ 2>/dev/null || true
+              sudo cp -r config/Automation_Custom_Script.sh /mnt/cheeky-${arch}/root/ 2>/dev/null || true
+
+              # Copy documentation
+              sudo cp -r docs /mnt/cheeky-${arch}/root/cheeky-docs 2>/dev/null || true
+
+              # Create version marker
+              sudo touch /mnt/cheeky-${arch}/root/.cheeky-${{ steps.version.outputs.VERSION }}
+
+              echo "Customization complete"
+              sudo umount /mnt/cheeky-${arch}
+            else
+              echo "WARNING: Could not mount filesystem, skipping customization"
+            fi
+
+            sudo losetup -d "$LOOP_DEV"
+            sudo rmdir /mnt/cheeky-${arch} 2>/dev/null || true
+
+            # Compress customized image
+            echo "Compressing customized image..."
+            xz -9v "$IMG_FILE"
+            mv "$IMG_FILE.xz" "$IMG_XZ"
 
             # Checksum
             sha256sum "$IMG_XZ" > "${IMG_XZ}.sha256"
