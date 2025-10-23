@@ -32,37 +32,31 @@ jobs:
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download DietPi images
+      - name: Create test images (placeholder for now)
         run: |
           mkdir -p release-assets
-          echo "Downloading DietPi images (this may take a few minutes)..."
-
-          # DietPi image URLs for different architectures
-          declare -A images=(
-            [armv8]="DietPi_RPi-ARMv8-Bullseye.img.xz"
-            [armv7]="DietPi_RPi-ARMv7-Bullseye.img.xz"
-            [armv6]="DietPi_RPi-Zero-Bullseye.img.xz"
-          )
+          echo "Creating placeholder images for testing..."
 
           for arch in armv6 armv7 armv8; do
-            img_name="${images[$arch]}"
-            echo "Downloading $arch image: $img_name"
+            echo "Creating $arch image..."
 
-            # Download from DietPi releases
-            wget -q --show-progress \
-              "https://dietpi.com/downloads/images/$img_name" \
-              -O "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz" || {
-              echo "Failed to download $arch image, creating placeholder..."
-              dd if=/dev/zero of=release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img bs=1M count=10
-              xz -9 release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img
-            }
+            # Remove any existing files
+            rm -f "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img"
+            rm -f "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz"
+
+            # Create placeholder image (100MB for testing)
+            dd if=/dev/zero of="release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img" bs=1M count=100 2>/dev/null
+
+            # Compress with xz
+            xz -9v "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img"
 
             # Generate checksums
-            sha256sum release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz > \
-              release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz.sha256
+            sha256sum "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz" > \
+              "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz.sha256"
           done
 
-          echo "Done downloading images"
+          echo "Done creating images"
+          ls -lah release-assets/
 
       - name: Create QEMU bundles
         run: |
