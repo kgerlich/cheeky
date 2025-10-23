@@ -112,9 +112,9 @@ echo   Bluetooth Manager: http://localhost:8080
 echo   SSH: ssh -p 2222 root@localhost password: raspberry
 echo.
 
-REM Run QEMU with port forwarding (headless)
+REM Run QEMU with port forwarding and serial console output
 "!QEMU_DIR!\qemu-system-aarch64.exe" ^
-    -display none ^
+    -nographic ^
     -machine virt ^
     -cpu cortex-a72 ^
     -m 2048 ^
@@ -124,7 +124,7 @@ REM Run QEMU with port forwarding (headless)
     -device virtio-blk-device,drive=hd ^
     -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22 ^
     -device virtio-net-device,netdev=net0 ^
-    -serial mon:stdio
+    -serial stdio
 
 echo.
 echo ==========================================

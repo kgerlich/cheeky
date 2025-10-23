@@ -85,9 +85,9 @@ echo "Starting QEMU..."
 echo "This may take 30-60 seconds to boot"
 echo ""
 
-# Run QEMU with port forwarding (headless)
+# Run QEMU with port forwarding and serial console output
 qemu-system-aarch64 \
-    -display none \
+    -nographic \
     -machine virt \
     -cpu cortex-a72 \
     -m 2048 \
@@ -97,7 +97,7 @@ qemu-system-aarch64 \
     -device virtio-blk-device,drive=hd \
     -netdev "user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22" \
     -device virtio-net-device,netdev=net0 \
-    -serial mon:stdio
+    -serial stdio
 
 echo ""
 echo "=========================================="
