@@ -2,6 +2,10 @@
 # Cheeky QEMU Launcher for Linux/macOS
 # Downloads and runs the Cheeky image in QEMU
 # No complex setup required - just run this script!
+#
+# Environment variables:
+#   CHEEKY_QEMU_DIR - Directory containing QEMU files (default: script directory)
+#   CHEEKY_WORK_DIR - Working directory for images (default: script directory)
 
 set -e
 
@@ -12,15 +16,20 @@ IMAGE_XZ="${IMAGE_FILE}.xz"
 IMAGE_URL="https://github.com/${REPO}/releases/download/${VERSION}/${IMAGE_XZ}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+QEMU_DIR="${CHEEKY_QEMU_DIR:-$SCRIPT_DIR}"
+WORK_DIR="${CHEEKY_WORK_DIR:-$SCRIPT_DIR}"
 
 echo "=========================================="
-echo "🍑 Cheeky QEMU Launcher"
+echo "Cheeky QEMU Launcher"
 echo "=========================================="
+echo ""
+echo "QEMU Dir: $QEMU_DIR"
+echo "Work Dir: $WORK_DIR"
 echo ""
 
 # Check QEMU is installed
 if ! command -v qemu-system-aarch64 &> /dev/null; then
-    echo "❌ Error: QEMU is not installed"
+    echo "Error: QEMU is not installed"
     echo ""
     echo "Install QEMU:"
     echo "  Linux (Ubuntu/Debian): sudo apt-get install qemu-system-arm"
@@ -29,34 +38,37 @@ if ! command -v qemu-system-aarch64 &> /dev/null; then
     exit 1
 fi
 
+# Change to work directory
+cd "$WORK_DIR" || exit 1
+
 # Download image if needed
 if [ ! -f "$IMAGE_FILE" ]; then
     if [ ! -f "$IMAGE_XZ" ]; then
-        echo "📥 Downloading Cheeky image (~180MB)..."
-        echo "   From: $IMAGE_URL"
+        echo "Downloading Cheeky image (~180MB)..."
+        echo "From: $IMAGE_URL"
         wget -q --show-progress "$IMAGE_URL" || {
-            echo "❌ Download failed"
+            echo "Download failed"
             exit 1
         }
     fi
 
-    echo "📦 Extracting image..."
+    echo "Extracting image..."
     xz -d "$IMAGE_XZ" || {
-        echo "❌ Extraction failed"
+        echo "Extraction failed"
         exit 1
     }
 fi
 
 # Resize image to add space
 if [ ! -f "${IMAGE_FILE}.resized" ]; then
-    echo "📏 Resizing image..."
+    echo "Resizing image..."
     qemu-img resize "$IMAGE_FILE" +2G
     touch "${IMAGE_FILE}.resized"
 fi
 
 echo ""
-echo "🚀 Starting QEMU..."
-echo "   This may take 30-60 seconds to boot"
+echo "Starting QEMU..."
+echo "This may take 30-60 seconds to boot"
 echo ""
 
 # Run QEMU with port forwarding
@@ -64,7 +76,7 @@ qemu-system-aarch64 \
     -machine virt \
     -cpu cortex-a72 \
     -m 2048 \
-    -kernel "$SCRIPT_DIR/kernel-qemu" \
+    -kernel "$QEMU_DIR/kernel-qemu" \
     -append "root=/dev/vda2 rootfstype=ext4 rw console=ttyAMA0" \
     -drive "file=$IMAGE_FILE,if=none,format=raw,id=hd" \
     -device virtio-blk-device,drive=hd \
