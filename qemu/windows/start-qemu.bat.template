@@ -58,7 +58,7 @@ if not exist "!IMAGE_FILE!" (
         REM Try download with authentication if GITHUB_TOKEN is set
         if defined GITHUB_TOKEN (
             echo Using GitHub authentication...
-            powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_XZ!' -Headers @{'Authorization'='token !GITHUB_TOKEN!'} -UseBasicParsing"
+            powershell -Command "$headers = @{'Authorization'='Bearer !GITHUB_TOKEN!'}; Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_XZ!' -Headers $headers -UseBasicParsing"
         ) else (
             echo Downloading without authentication. Set GITHUB_TOKEN env var if repository is private.
             powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_XZ!' -UseBasicParsing"
