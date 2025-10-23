@@ -108,22 +108,34 @@ jobs:
           VERSION="${{ steps.version.outputs.VERSION }}"
           REPO="${{ github.repository }}"
           cd qemu-build
-          
-          # Copy templates from repo
-          cp -r ../qemu/* .
-          
+
+          # Copy directories from repo
+          cp -r ../qemu/linux . && cp -r ../qemu/macos . && cp -r ../qemu/windows .
+
+          # Rename templates to remove .template extension
+          for dir in linux macos windows; do
+            if [ -f "$dir/start-qemu.sh.template" ]; then
+              mv "$dir/start-qemu.sh.template" "$dir/start-qemu.sh"
+            fi
+            if [ -f "$dir/start-qemu.bat.template" ]; then
+              mv "$dir/start-qemu.bat.template" "$dir/start-qemu.bat"
+            fi
+          done
+
           # Replace placeholders in scripts
           for file in linux/start-qemu.sh macos/start-qemu.sh windows/start-qemu.bat windows/README.txt linux/README.md macos/README.md; do
-            sed -i "s|VERSION_PLACEHOLDER|$VERSION|g" "$file" 2>/dev/null || sed -i '' "s|VERSION_PLACEHOLDER|$VERSION|g" "$file"
-            sed -i "s|REPO_PLACEHOLDER|$REPO|g" "$file" 2>/dev/null || sed -i '' "s|REPO_PLACEHOLDER|$REPO|g" "$file"
+            if [ -f "$file" ]; then
+              sed -i "s|VERSION_PLACEHOLDER|$VERSION|g" "$file" 2>/dev/null || sed -i '' "s|VERSION_PLACEHOLDER|$VERSION|g" "$file"
+              sed -i "s|REPO_PLACEHOLDER|$REPO|g" "$file" 2>/dev/null || sed -i '' "s|REPO_PLACEHOLDER|$REPO|g" "$file"
+            fi
           done
-          
+
           # Copy kernel/dtb to each bundle
           for dir in linux macos windows; do
-            cp kernel-qemu $dir/
-            cp versatile-pb.dtb $dir/
+            cp kernel-qemu "$dir/"
+            cp versatile-pb.dtb "$dir/"
           done
-          
+
           # Package
           tar czf cheeky-qemu-linux-${VERSION}.tar.gz -C linux .
           tar czf cheeky-qemu-macos-${VERSION}.tar.gz -C macos .
