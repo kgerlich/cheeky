@@ -22,7 +22,9 @@ REM Set QEMU directory from parameter or default to script directory
 if "%~1"=="" (
     set "QEMU_DIR=%~dp0"
 ) else (
+    REM Remove trailing backslash if present
     set "QEMU_DIR=%~1"
+    if "!QEMU_DIR:~-1!"=="\" set "QEMU_DIR=!QEMU_DIR:~0,-1!"
 )
 
 REM Working directory is current directory
@@ -32,16 +34,18 @@ echo ==========================================
 echo Cheeky QEMU Launcher for Windows
 echo ==========================================
 echo.
-echo QEMU Dir: %QEMU_DIR%
-echo Work Dir: %WORK_DIR%
+echo QEMU Dir: !QEMU_DIR!
+echo Work Dir: !WORK_DIR!
 echo.
 
 REM Check if QEMU exists
-if not exist "%QEMU_DIR%\qemu-system-aarch64.exe" (
-    echo Error: QEMU not found in %QEMU_DIR%
+set "QEMU_EXE=!QEMU_DIR!\qemu-system-aarch64.exe"
+if not exist "!QEMU_EXE!" (
+    echo Error: QEMU not found
+    echo Expected: !QEMU_EXE!
     echo.
     echo Please download QEMU from https://qemu.weilnetz.de/
-    echo Set CHEEKY_QEMU_DIR environment variable to point to QEMU directory
+    echo Run: start-qemu.bat "C:\path\to\qemu"
     echo.
     pause
     exit /b 1
@@ -71,7 +75,7 @@ if not exist "%IMAGE_FILE%" (
 REM Resize image if needed
 if not exist "%IMAGE_FILE%.resized" (
     echo Resizing image...
-    "%QEMU_DIR%\qemu-img.exe" resize "%IMAGE_FILE%" +2G
+    "!QEMU_DIR!\qemu-img.exe" resize "%IMAGE_FILE%" +2G
     type nul > "%IMAGE_FILE%.resized"
 )
 
@@ -86,11 +90,11 @@ echo   SSH: ssh -p 2222 root@localhost (password: raspberry)
 echo.
 
 REM Run QEMU with port forwarding
-"%QEMU_DIR%\qemu-system-aarch64.exe" ^
+"!QEMU_DIR!\qemu-system-aarch64.exe" ^
     -machine virt ^
     -cpu cortex-a72 ^
     -m 2048 ^
-    -kernel "%QEMU_DIR%\kernel-qemu" ^
+    -kernel "!QEMU_DIR!\kernel-qemu" ^
     -append "root=/dev/vda2 rootfstype=ext4 rw console=ttyAMA0" ^
     -drive file="%IMAGE_FILE%",if=none,format=raw,id=hd ^
     -device virtio-blk-device,drive=hd ^
