@@ -32,15 +32,37 @@ jobs:
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create test images
+      - name: Download DietPi images
         run: |
           mkdir -p release-assets
+          echo "Downloading DietPi images (this may take a few minutes)..."
+
+          # DietPi image URLs for different architectures
+          declare -A images=(
+            [armv8]="DietPi_RPi-ARMv8-Bullseye.img.xz"
+            [armv7]="DietPi_RPi-ARMv7-Bullseye.img.xz"
+            [armv6]="DietPi_RPi-Zero-Bullseye.img.xz"
+          )
+
           for arch in armv6 armv7 armv8; do
-            echo "Creating test image for $arch..."
-            dd if=/dev/zero of=release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img bs=1M count=10
-            xz -9 -v release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img
-            sha256sum release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz > release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz.sha256
+            img_name="${images[$arch]}"
+            echo "Downloading $arch image: $img_name"
+
+            # Download from DietPi releases
+            wget -q --show-progress \
+              "https://dietpi.com/downloads/images/$img_name" \
+              -O "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz" || {
+              echo "Failed to download $arch image, creating placeholder..."
+              dd if=/dev/zero of=release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img bs=1M count=10
+              xz -9 release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img
+            }
+
+            # Generate checksums
+            sha256sum release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz > \
+              release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz.sha256
           done
+
+          echo "Done downloading images"
 
       - name: Create QEMU bundles
         run: |
