@@ -71,16 +71,18 @@ jobs:
             echo "Extracting image for customization..."
             xz -d "/tmp/dietpi-${arch}.img.xz"
 
-            # Mount using fdisk to find partition offset
-            echo "Mounting filesystem..."
-            LOOP_DEV=$(sudo losetup -f)
-            sudo losetup "$LOOP_DEV" "$IMG_FILE"
-
-            # Use fdisk to find the partition offset (usually sector 2048 for partition 2)
-            PARTITION_START=$(sudo fdisk -lu "$LOOP_DEV" | grep "${LOOP_DEV}p2" | awk '{print $2}')
+            # Find partition offset using fdisk
+            echo "Finding partition offset..."
+            PARTITION_START=$(sudo fdisk -lu "$IMG_FILE" 2>/dev/null | grep "\.img2" | awk '{print $2}')
+            if [ -z "$PARTITION_START" ]; then
+              echo "ERROR: Could not find partition in image"
+              exit 1
+            fi
             OFFSET=$((PARTITION_START * 512))
+            echo "Partition starts at sector $PARTITION_START (offset: $OFFSET bytes)"
 
-            # Mount with offset
+            # Mount with calculated offset
+            echo "Mounting filesystem..."
             sudo mkdir -p /mnt/cheeky-${arch}
             sudo mount -o loop,offset=$OFFSET "$IMG_FILE" /mnt/cheeky-${arch}
 
@@ -104,7 +106,6 @@ jobs:
               echo "WARNING: Could not mount filesystem, skipping customization"
             fi
 
-            sudo losetup -d "$LOOP_DEV"
             sudo rmdir /mnt/cheeky-${arch} 2>/dev/null || true
 
             # Compress customized image
