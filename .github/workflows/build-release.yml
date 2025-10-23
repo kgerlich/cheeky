@@ -141,11 +141,13 @@ jobs:
           tar czf cheeky-qemu-macos-${VERSION}.tar.gz -C macos .
           cd windows && zip -r ../cheeky-qemu-windows-${VERSION}.zip . && cd ..
       
-      - name: Upload
+      - name: Upload QEMU bundles
         uses: actions/upload-artifact@v4
         with:
           name: qemu-bundles
-          path: qemu-build/*.{tar.gz,zip}
+          path: |
+            qemu-build/*.tar.gz
+            qemu-build/*.zip
 
   release:
     name: Create Release
@@ -160,17 +162,24 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
 
-      - name: List artifacts
-        run: find . -type f \( -name "*.img.xz" -o -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" -o -name "*.md5" \) | sort
-
-      - name: Delete old release if exists
+      - name: Prepare release files
         run: |
-          gh release delete ${{ github.ref_name }} -y 2>/dev/null || true
+          mkdir -p release-assets
+          find . -type f \( -name "cheeky-*.img.xz" -o -name "cheeky-*.tar.gz" -o -name "cheeky-*.zip" -o -name "cheeky-*.sha256" -o -name "cheeky-*.md5" \) -print0 | xargs -0 cp -t release-assets/ 2>/dev/null || true
+          echo "=== Release Assets ==="
+          ls -lah release-assets/ || echo "No files prepared"
+
+      - name: Check and clean old releases
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          # Try to delete existing release (ignore errors if it doesn't exist)
+          gh release delete "${{ github.ref_name }}" -y 2>/dev/null || echo "No existing release to delete"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           name: Cheeky ${{ github.ref_name }}
           body: |
@@ -207,12 +216,7 @@ jobs:
             ---
 
             🍑 Made with cheekiness by the community
-          files: |
-            **/cheeky-*.img.xz
-            **/cheeky-*.tar.gz
-            **/cheeky-*.zip
-            **/cheeky-*.sha256
-            **/cheeky-*.md5
+          files: release-assets/*
           draft: false
           prerelease: false
         env:
