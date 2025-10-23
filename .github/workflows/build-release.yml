@@ -41,6 +41,13 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq kpartx qemu-utils binfmt-support qemu-user-static > /dev/null 2>&1
 
+          # Map architecture to DietPi image filename
+          declare -A dietpi_images=(
+            [armv6]="DietPi_RPi1-ARMv6-Bookworm"
+            [armv7]="DietPi_RPi2-ARMv7-Bookworm"
+            [armv8]="DietPi_RPi234-ARMv8-Bookworm"
+          )
+
           for arch in armv6 armv7 armv8; do
             echo ""
             echo "=========================================="
@@ -49,30 +56,22 @@ jobs:
 
             IMG_FILE="/tmp/dietpi-${arch}.img"
             IMG_XZ="release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz"
+            DIETPI_IMG="${dietpi_images[$arch]}"
 
-            # Try to download DietPi image
-            echo "Attempting to download DietPi $arch image..."
-            DOWNLOAD_SUCCESS=0
+            # Download DietPi image from official source
+            echo "Downloading DietPi $arch image: $DIETPI_IMG.img.xz"
+            wget -q --show-progress \
+              "https://dietpi.com/downloads/images/${DIETPI_IMG}.img.xz" \
+              -O "/tmp/dietpi-${arch}.img.xz" || {
+              echo "ERROR: Failed to download DietPi $arch image"
+              exit 1
+            }
 
-            # Try multiple download sources
-            for url in \
-              "https://dietpi.com/downloads/images/DietPi_RPi-${arch^^}-Bookworm.img.xz" \
-              "https://github.com/MichaIng/DietPi/releases/download/v9.7/DietPi_RPi-${arch^^}-Bookworm.img.xz"; do
-              if wget -q --timeout=10 "$url" -O "/tmp/dietpi-${arch}.img.xz" 2>/dev/null; then
-                DOWNLOAD_SUCCESS=1
-                echo "✓ Downloaded from: $url"
-                xz -d "/tmp/dietpi-${arch}.img.xz"
-                break
-              fi
-            done
-
-            # If download failed, create a minimal bootable image
-            if [ $DOWNLOAD_SUCCESS -eq 0 ]; then
-              echo "Download failed, creating placeholder image..."
-              dd if=/dev/zero of="$IMG_FILE" bs=1M count=500 2>/dev/null
-              mkfs.ext4 -q "$IMG_FILE"
-              echo "Created minimal image (500MB)"
-            fi
+            echo "Extracting image..."
+            xz -d "/tmp/dietpi-${arch}.img.xz" || {
+              echo "ERROR: Failed to extract image"
+              exit 1
+            }
 
             # Resize image
             echo "Preparing image..."
