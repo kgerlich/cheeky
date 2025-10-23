@@ -112,8 +112,9 @@ echo   Bluetooth Manager: http://localhost:8080
 echo   SSH: ssh -p 2222 root@localhost password: raspberry
 echo.
 
-REM Run QEMU with port forwarding
+REM Run QEMU with port forwarding (headless)
 "!QEMU_DIR!\qemu-system-aarch64.exe" ^
+    -display none ^
     -machine virt ^
     -cpu cortex-a72 ^
     -m 2048 ^
