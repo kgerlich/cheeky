@@ -131,10 +131,6 @@ jobs:
           REPO="${{ github.repository }}"
           mkdir -p qemu-build/{linux,macos,windows}
 
-          # Download kernel
-          wget -q https://github.com/dhruvvyas90/qemu-rpi-kernel/raw/master/kernel-qemu-5.10.63-bullseye -O qemu-build/kernel-qemu
-          wget -q https://github.com/dhruvvyas90/qemu-rpi-kernel/raw/master/versatile-pb.dtb -O qemu-build/versatile-pb.dtb
-
           # Copy and process QEMU scripts
           for dir in linux macos windows; do
             cp -r qemu/$dir/* qemu-build/$dir/
@@ -151,10 +147,50 @@ jobs:
               fi
             done
 
-            # Copy kernel
-            cp qemu-build/kernel-qemu qemu-build/$dir/
-            cp qemu-build/versatile-pb.dtb qemu-build/$dir/
+            # Copy one of the armv8 images as example for QEMU testing
+            if [ -f "release-assets/cheeky-armv8-${VERSION}.img.xz" ]; then
+              cp "release-assets/cheeky-armv8-${VERSION}.img.xz" "qemu-build/$dir/cheeky-example.img.xz"
+              echo "Included cheeky-example.img.xz for QEMU testing"
+            fi
           done
+
+          # Create README for QEMU bundles
+          cat > qemu-build/QEMU-README.txt << 'EOF'
+CHEEKY QEMU BUNDLE
+==================
+
+This bundle contains launcher scripts to run Cheeky in QEMU emulation.
+
+REQUIREMENTS:
+- QEMU 5.0+
+- For Windows: Download from https://qemu.weilnetz.de/
+- For Linux: sudo apt-get install qemu-system-arm
+- For macOS: brew install qemu
+
+USAGE:
+
+1. Download a Cheeky image (.img.xz) from the releases page
+2. Extract it: unxz cheeky-armv8-v1.0.0.img.xz
+3. Place the .img file in this directory
+4. Run the launcher:
+   - Windows: start-qemu.bat "C:\path\to\qemu"
+   - Linux/macOS: ./start-qemu.sh
+
+IMAGES:
+- cheeky-armv8-*.img.xz  → Pi 3/4/5, Pi Zero 2 W
+- cheeky-armv7-*.img.xz  → Pi 2
+- cheeky-armv6-*.img.xz  → Pi Zero W, Pi 1
+
+After boot (~30-60 seconds), access:
+- Radio: http://localhost:6680
+- Bluetooth Manager: http://localhost:8080
+- SSH: ssh -p 2222 root@localhost (password: raspberry)
+
+To view boot output, modify the launcher script to use:
+  -serial telnet:localhost:4555,server,nowait
+Then in another terminal: telnet localhost 4555
+
+EOF
 
           # Package bundles
           cd qemu-build

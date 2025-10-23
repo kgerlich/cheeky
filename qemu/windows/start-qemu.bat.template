@@ -112,19 +112,18 @@ echo   Bluetooth Manager: http://localhost:8080
 echo   SSH: ssh -p 2222 root@localhost password: raspberry
 echo.
 
-REM Run QEMU with port forwarding and serial console output
+REM Run QEMU with port forwarding
+REM Note: Boot from image directly - no separate kernel needed
 "!QEMU_DIR!\qemu-system-aarch64.exe" ^
     -nographic ^
     -machine virt ^
     -cpu cortex-a72 ^
     -m 2048 ^
-    -kernel "!SCRIPT_DIR!kernel-qemu" ^
-    -append "root=/dev/vda2 rootfstype=ext4 rw console=ttyAMA0" ^
     -drive file="!IMAGE_FILE!",if=none,format=raw,id=hd ^
     -device virtio-blk-device,drive=hd ^
     -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22 ^
     -device virtio-net-device,netdev=net0 ^
-    -serial stdio
+    -serial telnet:localhost:4555,server,nowait
 
 echo.
 echo ==========================================
