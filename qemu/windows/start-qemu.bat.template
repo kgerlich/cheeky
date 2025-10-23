@@ -25,11 +25,6 @@ if "%~1"=="" (
     set QEMU_DIR=%~1
 )
 
-REM Remove trailing backslash if present
-if "!QEMU_DIR:~-1!"=="\" (
-    set QEMU_DIR=!QEMU_DIR:~0,-1!
-)
-
 REM Working directory is current directory
 set WORK_DIR=%cd%
 
@@ -57,9 +52,10 @@ if not exist "!QEMU_EXE!" (
 REM Download image if needed
 if not exist "!IMAGE_FILE!" (
     if not exist "!IMAGE_XZ!" (
-        echo Downloading Cheeky image (~180MB)...
+        echo Downloading Cheeky image approximately 180MB...
         echo From: !IMAGE_URL!
-        powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_XZ!'" || (
+        powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_XZ!'"
+        if !errorlevel! neq 0 (
             echo Download failed
             pause
             exit /b 1
@@ -89,7 +85,7 @@ echo.
 echo Once booted, open in your browser:
 echo   Radio: http://localhost:6680
 echo   Bluetooth Manager: http://localhost:8080
-echo   SSH: ssh -p 2222 root@localhost (password: raspberry)
+echo   SSH: ssh -p 2222 root@localhost password: raspberry
 echo.
 
 REM Run QEMU with port forwarding
