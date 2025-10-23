@@ -159,12 +159,15 @@ jobs:
       
       - name: Download artifacts
         uses: actions/download-artifact@v4
-      
-      - name: Prepare release files
+
+      - name: List artifacts
+        run: find . -type f \( -name "*.img.xz" -o -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" -o -name "*.md5" \) | sort
+
+      - name: Delete old release if exists
         run: |
-          mkdir -p release-files
-          find . -type f \( -name "*.img.xz" -o -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" -o -name "*.md5" \) -exec cp {} release-files/ \;
-          ls -lah release-files/
+          gh release delete ${{ github.ref_name }} -y 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create release
         uses: softprops/action-gh-release@v1
@@ -204,6 +207,13 @@ jobs:
             ---
 
             🍑 Made with cheekiness by the community
-          files: release-files/*
+          files: |
+            **/cheeky-*.img.xz
+            **/cheeky-*.tar.gz
+            **/cheeky-*.zip
+            **/cheeky-*.sha256
+            **/cheeky-*.md5
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
