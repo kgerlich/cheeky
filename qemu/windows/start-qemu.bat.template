@@ -78,9 +78,17 @@ if not exist "!IMAGE_FILE!" (
     )
 
     echo Extracting image...
-    7z x "!IMAGE_XZ!"
+    7z x "!IMAGE_XZ!" 2>nul
     if !errorlevel! neq 0 (
         echo Extraction failed
+        echo.
+        echo 7-Zip is required but not found on this system.
+        echo.
+        echo Install 7-Zip:
+        echo   Option 1: Download from https://www.7-zip.org/download.html
+        echo   Option 2: winget install 7zip
+        echo   Option 3: choco install 7zip
+        echo.
         pause
         exit /b 1
     )
