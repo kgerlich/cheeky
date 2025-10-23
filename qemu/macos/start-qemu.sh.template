@@ -90,7 +90,7 @@ qemu-system-aarch64 \
     -machine virt \
     -cpu cortex-a72 \
     -m 2048 \
-    -kernel "$QEMU_DIR/kernel-qemu" \
+    -kernel "$SCRIPT_DIR/kernel-qemu" \
     -append "root=/dev/vda2 rootfstype=ext4 rw console=ttyAMA0" \
     -drive "file=$IMAGE_FILE,if=none,format=raw,id=hd" \
     -device virtio-blk-device,drive=hd \
