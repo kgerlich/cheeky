@@ -113,37 +113,68 @@ jobs:
           REPO="${{ github.repository }}"
           cd qemu-build
 
+          echo "=== Setup ==="
+          echo "VERSION: $VERSION"
+          echo "REPO: $REPO"
+          echo "PWD: $(pwd)"
+
           # Copy directories from repo
-          cp -r ../qemu/linux . && cp -r ../qemu/macos . && cp -r ../qemu/windows .
+          echo "=== Copying directories ==="
+          cp -r ../qemu/linux . && echo "[OK] Copied linux" || exit 1
+          cp -r ../qemu/macos . && echo "[OK] Copied macos" || exit 1
+          cp -r ../qemu/windows . && echo "[OK] Copied windows" || exit 1
+
+          echo ""
+          echo "=== Files before renaming ==="
+          ls -la linux/ macos/ windows/
 
           # Rename templates to remove .template extension
+          echo ""
+          echo "=== Renaming templates ==="
           for dir in linux macos windows; do
             if [ -f "$dir/start-qemu.sh.template" ]; then
               mv "$dir/start-qemu.sh.template" "$dir/start-qemu.sh"
+              echo "[OK] Renamed $dir/start-qemu.sh.template"
             fi
             if [ -f "$dir/start-qemu.bat.template" ]; then
               mv "$dir/start-qemu.bat.template" "$dir/start-qemu.bat"
+              echo "[OK] Renamed $dir/start-qemu.bat.template"
             fi
           done
 
           # Replace placeholders in scripts
+          echo ""
+          echo "=== Replacing placeholders ==="
           for file in linux/start-qemu.sh macos/start-qemu.sh windows/start-qemu.bat windows/README.txt linux/README.md macos/README.md; do
             if [ -f "$file" ]; then
-              sed -i "s|VERSION_PLACEHOLDER|$VERSION|g" "$file" 2>/dev/null || sed -i '' "s|VERSION_PLACEHOLDER|$VERSION|g" "$file"
-              sed -i "s|REPO_PLACEHOLDER|$REPO|g" "$file" 2>/dev/null || sed -i '' "s|REPO_PLACEHOLDER|$REPO|g" "$file"
+              echo "Processing: $file ($(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null) bytes)"
+              sed -i.bak "s|VERSION_PLACEHOLDER|$VERSION|g" "$file"
+              sed -i.bak "s|REPO_PLACEHOLDER|$REPO|g" "$file"
+              rm -f "$file.bak"
+              echo "[OK] Processed $file ($(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null) bytes)"
+            else
+              echo "[SKIP] File not found: $file"
             fi
           done
 
           # Copy kernel/dtb to each bundle
+          echo ""
+          echo "=== Copying kernel files ==="
           for dir in linux macos windows; do
-            cp kernel-qemu "$dir/"
-            cp versatile-pb.dtb "$dir/"
+            cp kernel-qemu "$dir/" && echo "[OK] Copied kernel to $dir"
+            cp versatile-pb.dtb "$dir/" && echo "[OK] Copied DTB to $dir"
           done
 
           # Package
-          tar czf cheeky-qemu-linux-${VERSION}.tar.gz -C linux .
-          tar czf cheeky-qemu-macos-${VERSION}.tar.gz -C macos .
-          cd windows && zip -r ../cheeky-qemu-windows-${VERSION}.zip . && cd ..
+          echo ""
+          echo "=== Creating packages ==="
+          tar czf cheeky-qemu-linux-${VERSION}.tar.gz -C linux . && echo "[OK] Created cheeky-qemu-linux-${VERSION}.tar.gz"
+          tar czf cheeky-qemu-macos-${VERSION}.tar.gz -C macos . && echo "[OK] Created cheeky-qemu-macos-${VERSION}.tar.gz"
+          cd windows && zip -r ../cheeky-qemu-windows-${VERSION}.zip . && cd .. && echo "[OK] Created cheeky-qemu-windows-${VERSION}.zip"
+
+          echo ""
+          echo "=== Created bundles ==="
+          ls -lah *.tar.gz *.zip
       
       - name: Upload QEMU bundles
         uses: actions/upload-artifact@v4
