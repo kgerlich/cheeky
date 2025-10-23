@@ -156,40 +156,21 @@ jobs:
 
           # Create README for QEMU bundles
           echo "Creating QEMU README..."
-          mkdir -p qemu-build-readme
-          cat > qemu-build-readme/README.txt << READMEEOF
-CHEEKY QEMU BUNDLE
-==================
-
-This bundle contains launcher scripts to run Cheeky in QEMU emulation.
-
-REQUIREMENTS:
-- QEMU 5.0 or newer
-- For Windows: Download from https://qemu.weilnetz.de/
-- For Linux: sudo apt-get install qemu-system-arm
-- For macOS: brew install qemu
-
-USAGE:
-1. Download a Cheeky image (.img.xz) from the releases page
-2. Extract it: unxz cheeky-armv8-v1.0.0.img.xz
-3. Place the .img file in this directory
-4. Run the launcher:
-   - Windows: start-qemu.bat "C:\path\to\qemu"
-   - Linux/macOS: ./start-qemu.sh
-
-IMAGES:
-- cheeky-armv8-*.img.xz - Pi 3/4/5, Pi Zero 2 W
-- cheeky-armv7-*.img.xz - Pi 2
-- cheeky-armv6-*.img.xz - Pi Zero W, Pi 1
-
-After boot (30-60 seconds), access:
-- Radio: http://localhost:6680
-- Bluetooth Manager: http://localhost:8080
-- SSH: ssh -p 2222 root@localhost (password: raspberry)
-
-For boot output, open terminal: telnet localhost 4555
-READMEEOF
-          cp qemu-build-readme/README.txt qemu-build/
+          for dir in qemu-build/{linux,macos,windows}; do
+            echo "CHEEKY QEMU BUNDLE" > "$dir/README.txt"
+            echo "==================" >> "$dir/README.txt"
+            echo "" >> "$dir/README.txt"
+            echo "Usage:" >> "$dir/README.txt"
+            echo "1. Download cheeky-armv8-*.img.xz from releases" >> "$dir/README.txt"
+            echo "2. Extract: unxz cheeky-armv8-*.img.xz" >> "$dir/README.txt"
+            echo "3. Place .img file in this directory" >> "$dir/README.txt"
+            echo "4. Run launcher: ./start-qemu.sh or start-qemu.bat" >> "$dir/README.txt"
+            echo "" >> "$dir/README.txt"
+            echo "Access after boot (30-60 seconds):" >> "$dir/README.txt"
+            echo "- Radio: http://localhost:6680" >> "$dir/README.txt"
+            echo "- Bluetooth: http://localhost:8080" >> "$dir/README.txt"
+            echo "- SSH: ssh -p 2222 root@localhost" >> "$dir/README.txt"
+          done
 
           # Package bundles
           cd qemu-build
