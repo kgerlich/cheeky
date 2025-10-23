@@ -32,30 +32,93 @@ jobs:
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create test images (placeholder for now)
+      - name: Download and customize DietPi images
         run: |
+          set -e
           mkdir -p release-assets
-          echo "Creating placeholder images for testing..."
+          echo "Building Cheeky DietPi images..."
+
+          # Install dependencies for image manipulation
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq kpartx qemu-utils binfmt-support qemu-user-static > /dev/null 2>&1
+
+          # DietPi image URLs (from official GitHub releases)
+          declare -A images=(
+            [armv8]="DietPi_RPi-ARMv8-Bookworm"
+            [armv7]="DietPi_RPi-ARMv7-Bookworm"
+            [armv6]="DietPi_RPi-Zero-Bookworm"
+          )
 
           for arch in armv6 armv7 armv8; do
-            echo "Creating $arch image..."
+            img_base="${images[$arch]}"
+            echo ""
+            echo "=========================================="
+            echo "Building $arch image..."
+            echo "=========================================="
 
-            # Remove any existing files
-            rm -f "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img"
-            rm -f "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz"
+            # Download DietPi image from official repository
+            echo "Downloading DietPi $arch image..."
+            wget -q --show-progress \
+              "https://github.com/MichaIng/DietPi/releases/download/v9.6/DietPi_RPi-${arch^^}-Bookworm.img.xz" \
+              -O "/tmp/dietpi-${arch}.img.xz" || {
+              echo "Failed to download $arch image"
+              exit 1
+            }
 
-            # Create placeholder image (100MB for testing)
-            dd if=/dev/zero of="release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img" bs=1M count=100 2>/dev/null
+            # Extract image
+            echo "Extracting image..."
+            xz -d "/tmp/dietpi-${arch}.img.xz"
+            IMG_FILE="/tmp/dietpi-${arch}.img"
 
-            # Compress with xz
-            xz -9v "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img"
+            # Resize image to add space for customizations
+            echo "Resizing image..."
+            resize2fs -f "$IMG_FILE" 2G || true
 
-            # Generate checksums
+            # Get image details
+            LOOP_DEV=$(sudo losetup -f)
+            echo "Using loop device: $LOOP_DEV"
+
+            # Mount and customize image
+            echo "Mounting image..."
+            sudo losetup "$LOOP_DEV" "$IMG_FILE"
+            sudo partprobe "$LOOP_DEV"
+
+            # Create mount point
+            sudo mkdir -p /mnt/cheeky-${arch}
+            sudo mount "${LOOP_DEV}p2" /mnt/cheeky-${arch}
+
+            # Copy Cheeky configuration files
+            echo "Installing Cheeky components..."
+            sudo cp -r config/* /mnt/cheeky-${arch}/root/ 2>/dev/null || true
+            sudo cp -r docs /mnt/cheeky-${arch}/root/cheeky-docs 2>/dev/null || true
+
+            # Create setup marker
+            sudo touch /mnt/cheeky-${arch}/root/.cheeky-version-${{ steps.version.outputs.VERSION }}
+
+            # Cleanup
+            echo "Finalizing image..."
+            sudo umount /mnt/cheeky-${arch}
+            sudo losetup -d "$LOOP_DEV"
+            sudo rmdir /mnt/cheeky-${arch}
+
+            # Compress final image
+            echo "Compressing image..."
+            xz -9v "$IMG_FILE"
+
+            # Move to release assets
+            mv "$IMG_FILE.xz" "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz"
+
+            # Generate checksum
             sha256sum "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz" > \
               "release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz.sha256"
+
+            echo "✓ $arch image complete"
           done
 
-          echo "Done creating images"
+          echo ""
+          echo "=========================================="
+          echo "All images built successfully!"
+          echo "=========================================="
           ls -lah release-assets/
 
       - name: Create QEMU bundles
