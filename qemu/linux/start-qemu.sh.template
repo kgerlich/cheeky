@@ -45,12 +45,25 @@ fi
 # Download image if needed
 if [ ! -f "$IMAGE_FILE" ]; then
     if [ ! -f "$IMAGE_XZ" ]; then
-        echo "Downloading Cheeky image (~180MB)..."
+        echo "Downloading Cheeky image (approximately 180MB)..."
         echo "From: $IMAGE_URL"
-        wget -q --show-progress "$IMAGE_URL" || {
-            echo "Download failed"
-            exit 1
-        }
+
+        if [ -n "$GITHUB_TOKEN" ]; then
+            echo "Using GitHub authentication..."
+            wget -q --show-progress --header="Authorization: token $GITHUB_TOKEN" "$IMAGE_URL" || {
+                echo "Download failed"
+                exit 1
+            }
+        else
+            wget -q --show-progress "$IMAGE_URL" || {
+                echo "Download failed"
+                echo ""
+                echo "If repository is private, set GITHUB_TOKEN environment variable:"
+                echo "  export GITHUB_TOKEN=your_personal_access_token"
+                echo "  ./start-qemu.sh"
+                exit 1
+            }
+        fi
     fi
 
     echo "Extracting image..."

@@ -54,9 +54,24 @@ if not exist "!IMAGE_FILE!" (
     if not exist "!IMAGE_XZ!" (
         echo Downloading Cheeky image approximately 180MB...
         echo From: !IMAGE_URL!
-        powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_XZ!'"
+
+        REM Try download with authentication if GITHUB_TOKEN is set
+        if defined GITHUB_TOKEN (
+            echo Using GitHub authentication...
+            powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_XZ!' -Headers @{'Authorization'='token !GITHUB_TOKEN!'} -UseBasicParsing"
+        ) else (
+            echo Downloading without authentication. Set GITHUB_TOKEN env var if repository is private.
+            powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_XZ!' -UseBasicParsing"
+        )
+
         if !errorlevel! neq 0 (
             echo Download failed
+            if not defined GITHUB_TOKEN (
+                echo.
+                echo If repository is private, set GITHUB_TOKEN environment variable:
+                echo   set GITHUB_TOKEN=your_personal_access_token
+                echo   start-qemu.bat "C:\path\to\qemu"
+            )
             pause
             exit /b 1
         )
