@@ -12,7 +12,7 @@ setlocal enabledelayedexpansion
 
 set VERSION=VERSION_PLACEHOLDER
 set REPO=REPO_PLACEHOLDER
-set IMAGE_FILE=cheeky-qemu-ubuntu-!VERSION!.qcow2
+set IMAGE_FILE=cheeky-qemu-debian-!VERSION!.qcow2
 set IMAGE_URL=https://github.com/!REPO!/releases/download/!VERSION!/!IMAGE_FILE!
 
 REM Set directories

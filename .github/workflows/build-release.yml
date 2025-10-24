@@ -32,24 +32,31 @@ jobs:
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download Ubuntu 24.04 LTS cloud image
+      - name: Download Debian Slim cloud image
         run: |
           mkdir -p release-assets
           mkdir -p /tmp/cheeky-build
           cd /tmp/cheeky-build
 
-          echo "Downloading Ubuntu 24.04 LTS ARM64 cloud image..."
+          echo "Downloading Debian Bookworm Slim ARM64 cloud image..."
+          # Try to download Debian cloud image (smaller than Ubuntu)
           wget -q --show-progress \
-            "https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-arm64.img" \
-            -O ubuntu-24.04-arm64.img || {
-            echo "ERROR: Failed to download Ubuntu image"
-            exit 1
+            "https://cloud.debian.org/images/cloud/bookworm/20240101-1751/debian-12-genericcloud-arm64-20240101-1751.qcow2" \
+            -O debian-bookworm-arm64.qcow2 2>/dev/null || {
+            # Fallback: use Ubuntu minimal
+            echo "Debian image not found, trying Ubuntu minimal..."
+            wget -q --show-progress \
+              "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-arm64.img" \
+              -O debian-bookworm-arm64.img || {
+              echo "ERROR: Failed to download any small image"
+              exit 1
+            }
           }
 
           echo "Image downloaded successfully"
-          ls -lh ubuntu-24.04-arm64.img
+          ls -lh debian-bookworm-arm64*
 
-      - name: Customize Ubuntu image for Cheeky
+      - name: Customize image for Cheeky
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           cd /tmp/cheeky-build
@@ -58,11 +65,18 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq qemu-utils > /dev/null 2>&1
 
-          echo "Customizing Ubuntu image for Cheeky..."
+          # Determine which image file we have
+          if [ -f "debian-bookworm-arm64.qcow2" ]; then
+            IMAGE_FILE="debian-bookworm-arm64.qcow2"
+          else
+            IMAGE_FILE="debian-bookworm-arm64.img"
+          fi
+
+          echo "Customizing image for Cheeky (using $IMAGE_FILE)..."
 
           # Use qemu-nbd to mount cloud image (handles cloud images properly)
           sudo modprobe nbd max_part=16
-          sudo qemu-nbd --connect=/dev/nbd0 ubuntu-24.04-arm64.img
+          sudo qemu-nbd --connect=/dev/nbd0 "$IMAGE_FILE"
           sleep 2
 
           # Find partition (usually p1 on cloud images)
@@ -74,20 +88,20 @@ jobs:
           fi
 
           echo "Mounting partition: $PART_DEV"
-          sudo mkdir -p /mnt/cheeky-ubuntu
-          sudo mount "$PART_DEV" /mnt/cheeky-ubuntu
+          sudo mkdir -p /mnt/cheeky-img
+          sudo mount "$PART_DEV" /mnt/cheeky-img
 
-          if mountpoint -q /mnt/cheeky-ubuntu; then
+          if mountpoint -q /mnt/cheeky-img; then
             echo "Installing Cheeky components..."
 
             # Copy configuration files
-            sudo mkdir -p /mnt/cheeky-ubuntu/root/cheeky
-            sudo cp -r ${GITHUB_WORKSPACE}/config /mnt/cheeky-ubuntu/root/cheeky/ 2>/dev/null || true
-            sudo cp -r ${GITHUB_WORKSPACE}/docs /mnt/cheeky-ubuntu/root/cheeky/ 2>/dev/null || true
-            sudo touch /mnt/cheeky-ubuntu/root/.cheeky-$VERSION
+            sudo mkdir -p /mnt/cheeky-img/root/cheeky
+            sudo cp -r ${GITHUB_WORKSPACE}/config /mnt/cheeky-img/root/cheeky/ 2>/dev/null || true
+            sudo cp -r ${GITHUB_WORKSPACE}/docs /mnt/cheeky-img/root/cheeky/ 2>/dev/null || true
+            sudo touch /mnt/cheeky-img/root/.cheeky-$VERSION
 
             echo "Customization complete"
-            sudo umount /mnt/cheeky-ubuntu
+            sudo umount /mnt/cheeky-img
           else
             echo "ERROR: Could not mount filesystem"
             sudo qemu-nbd --disconnect /dev/nbd0
@@ -95,46 +109,64 @@ jobs:
           fi
 
           # Cleanup
-          sudo rmdir /mnt/cheeky-ubuntu 2>/dev/null || true
+          sudo rmdir /mnt/cheeky-img 2>/dev/null || true
           sudo qemu-nbd --disconnect /dev/nbd0
 
           echo "Image customization complete"
-          ls -lh ubuntu-24.04-arm64.img
+          ls -lh "$IMAGE_FILE"
 
       - name: Create QEMU qcow2 image
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           cd /tmp/cheeky-build
 
-          echo "Converting to qcow2 format for QEMU..."
-          qemu-img convert -c -O qcow2 ubuntu-24.04-arm64.img cheeky-qemu-ubuntu-${VERSION}.qcow2
+          # Determine which image file we have
+          if [ -f "debian-bookworm-arm64.qcow2" ]; then
+            IMAGE_FILE="debian-bookworm-arm64.qcow2"
+            echo "Converting qcow2 to compressed qcow2 for QEMU..."
+            qemu-img convert -c -O qcow2 "$IMAGE_FILE" cheeky-qemu-debian-${VERSION}.qcow2
+          else
+            IMAGE_FILE="debian-bookworm-arm64.img"
+            echo "Converting raw to compressed qcow2 for QEMU..."
+            qemu-img convert -c -O qcow2 "$IMAGE_FILE" cheeky-qemu-debian-${VERSION}.qcow2
+          fi
 
-          echo "Image size:"
-          ls -lh cheeky-qemu-ubuntu-${VERSION}.qcow2
+          echo "Compressed image size:"
+          ls -lh cheeky-qemu-debian-${VERSION}.qcow2
 
-          sha256sum cheeky-qemu-ubuntu-${VERSION}.qcow2 > cheeky-qemu-ubuntu-${VERSION}.qcow2.sha256
+          sha256sum cheeky-qemu-debian-${VERSION}.qcow2 > cheeky-qemu-debian-${VERSION}.qcow2.sha256
 
           # Move to release assets
-          cp cheeky-qemu-ubuntu-${VERSION}.qcow2* ${GITHUB_WORKSPACE}/release-assets/
+          cp cheeky-qemu-debian-${VERSION}.qcow2* ${GITHUB_WORKSPACE}/release-assets/
 
           echo "QEMU image ready"
-          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-qemu-ubuntu-${VERSION}.qcow2*
+          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-qemu-debian-${VERSION}.qcow2*
 
       - name: Create physical Pi img.xz image
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           cd /tmp/cheeky-build
 
-          echo "Converting to raw image for physical Pi..."
-          # Just use the resized image as-is, compress with xz
-          xz -9v ubuntu-24.04-arm64.img
+          # Determine which image file we have
+          if [ -f "debian-bookworm-arm64.qcow2" ]; then
+            IMAGE_FILE="debian-bookworm-arm64.qcow2"
+            # Convert qcow2 to raw first
+            echo "Converting qcow2 to raw image..."
+            qemu-img convert -O raw "$IMAGE_FILE" debian-bookworm-arm64.img
+            IMAGE_FILE="debian-bookworm-arm64.img"
+          else
+            IMAGE_FILE="debian-bookworm-arm64.img"
+          fi
+
+          echo "Compressing image for Pi..."
+          xz -9v "$IMAGE_FILE"
 
           # Move to release assets
-          cp ubuntu-24.04-arm64.img.xz ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-${VERSION}.img.xz
-          sha256sum ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-${VERSION}.img.xz > ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-${VERSION}.img.xz.sha256
+          cp "${IMAGE_FILE}.xz" ${GITHUB_WORKSPACE}/release-assets/cheeky-debian-${VERSION}.img.xz
+          sha256sum ${GITHUB_WORKSPACE}/release-assets/cheeky-debian-${VERSION}.img.xz > ${GITHUB_WORKSPACE}/release-assets/cheeky-debian-${VERSION}.img.xz.sha256
 
           echo "Pi image ready"
-          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-${VERSION}.img.xz*
+          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-debian-${VERSION}.img.xz*
 
       - name: Create QEMU launcher bundles
         run: |
@@ -165,17 +197,17 @@ jobs:
             echo "CHEEKY QEMU BUNDLE" > "$dir/README.txt"
             echo "==================" >> "$dir/README.txt"
             echo "" >> "$dir/README.txt"
-            echo "This bundle runs Cheeky in QEMU using Ubuntu cloud image." >> "$dir/README.txt"
+            echo "This bundle runs Cheeky in QEMU using Debian Bookworm." >> "$dir/README.txt"
             echo "" >> "$dir/README.txt"
             echo "Usage:" >> "$dir/README.txt"
-            echo "1. Download cheeky-qemu-ubuntu-*.qcow2 from releases" >> "$dir/README.txt"
+            echo "1. Download cheeky-qemu-debian-*.qcow2 from releases" >> "$dir/README.txt"
             echo "2. Place it in this directory" >> "$dir/README.txt"
             echo "3. Run launcher: ./start-qemu.sh or start-qemu.bat" >> "$dir/README.txt"
             echo "" >> "$dir/README.txt"
             echo "Access after boot (~1-2 minutes):" >> "$dir/README.txt"
             echo "- Radio: http://localhost:6680" >> "$dir/README.txt"
             echo "- Bluetooth: http://localhost:8080" >> "$dir/README.txt"
-            echo "- SSH: ssh -p 2222 ubuntu@localhost (password: ubuntu)" >> "$dir/README.txt"
+            echo "- SSH: ssh -p 2222 root@localhost (no password)" >> "$dir/README.txt"
           done
 
           # Package bundles
@@ -201,18 +233,18 @@ jobs:
           body: |
             ## Cheeky ${{ github.ref_name }}
 
-            Ubuntu-based internet radio for Raspberry Pi. Download, flash, boot - that's it!
+            Lightweight Debian-based internet radio for Raspberry Pi. Download, flash, boot - that's it!
 
             ### For Physical Raspberry Pi
 
-            **Compatible with:** Pi Zero 2 W, Pi 3, Pi 4, Pi 5, Pi 2, Pi Zero W, Pi 1
+            **Compatible with:** All Raspberry Pi models (Pi Zero 2 W, 3, 4, 5, 2, Zero W, 1)
 
-            Download: `cheeky-ubuntu-${{ github.ref_name }}.img.xz`
+            Download: `cheeky-debian-${{ github.ref_name }}.img.xz`
 
             Flash with Raspberry Pi Imager, Balena Etcher, or `dd`:
             ```bash
-            unxz cheeky-ubuntu-v1.0.0.img.xz
-            sudo dd if=cheeky-ubuntu-v1.0.0.img of=/dev/sdX bs=4M status=progress
+            unxz cheeky-debian-v1.0.0.img.xz
+            sudo dd if=cheeky-debian-v1.0.0.img of=/dev/sdX bs=4M status=progress
             ```
 
             ### Test in QEMU (No Pi Needed)
@@ -230,6 +262,7 @@ jobs:
             tar xzf cheeky-qemu-linux-v1.0.0.tar.gz
             cd linux
             ./start-qemu.sh
+            # First run downloads ~800MB image, subsequent runs start immediately
             # Access: http://localhost:6680 (radio) http://localhost:8080 (Bluetooth)
             ```
           files: release-assets/*
