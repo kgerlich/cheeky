@@ -86,6 +86,8 @@ qemu-system-aarch64 \
     -append "root=/dev/vda1 console=ttyAMA0 rw" \
     -drive "file=$IMAGE_FILE,if=none,format=qcow2,id=hd" \
     -device virtio-blk-device,drive=hd \
+    -drive "file=$QEMU_DIR/seed.iso,if=none,format=raw,id=seed" \
+    -device virtio-blk-device,drive=seed \
     -netdev "user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22" \
     -device virtio-net-device,netdev=net0
 

@@ -165,20 +165,61 @@ jobs:
           echo "Pi image ready"
           ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-debian-${VERSION}.img.xz*
 
+      - name: Create cloud-init seed for QEMU
+        run: |
+          cd /tmp/cheeky-build
+
+          # Create cloud-init user-data
+          cat > user-data << 'EOF'
+          #cloud-config
+          users:
+            - name: debian
+              gecos: Debian User
+              sudo: ALL=(ALL) NOPASSWD:ALL
+              groups: users, admin, sudo
+              shell: /bin/bash
+              lock_passwd: false
+              # Password: cheeky
+              passwd: $6$dDWS5sFZ23QQ8WnP$TtDseO5yvETqIHfKEDfIfb4DoN1Z2Bk4WP1uCXZfhwSDTSkMNyTWM/qqqiQcrScUE/ksfA0FtMtm8bHqUO7ex.
+
+          ssh_pwauth: true
+          package_update: false
+          package_upgrade: false
+
+          runcmd:
+            - systemctl restart ssh
+          EOF
+
+          # Create meta-data
+          cat > meta-data << 'EOF'
+          instance-id: cheeky-qemu-001
+          local-hostname: cheeky
+          EOF
+
+          # Create NoCloud ISO seed
+          sudo apt-get install -y -qq genisoimage > /dev/null 2>&1
+          genisoimage -output seed.iso -volid cidata -joliet -rock user-data meta-data
+
+          echo "Cloud-init seed created:"
+          ls -lh seed.iso
+
       - name: Create QEMU launcher bundles
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           REPO="${{ github.repository }}"
           mkdir -p qemu-build/{linux,macos,windows}
 
-          # Copy kernel and initrd to build directory
+          # Copy kernel, initrd, and cloud-init seed to build directory
           cd /tmp/cheeky-build
           cp vmlinuz ${GITHUB_WORKSPACE}/qemu-build/linux/
           cp initrd.img ${GITHUB_WORKSPACE}/qemu-build/linux/
+          cp seed.iso ${GITHUB_WORKSPACE}/qemu-build/linux/
           cp vmlinuz ${GITHUB_WORKSPACE}/qemu-build/macos/
           cp initrd.img ${GITHUB_WORKSPACE}/qemu-build/macos/
+          cp seed.iso ${GITHUB_WORKSPACE}/qemu-build/macos/
           cp vmlinuz ${GITHUB_WORKSPACE}/qemu-build/windows/
           cp initrd.img ${GITHUB_WORKSPACE}/qemu-build/windows/
+          cp seed.iso ${GITHUB_WORKSPACE}/qemu-build/windows/
 
           cd ${GITHUB_WORKSPACE}
 
