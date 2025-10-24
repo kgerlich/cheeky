@@ -493,11 +493,14 @@
                         };
                         if (body) options.body = JSON.stringify(body);
 
+                        console.log(`[Cheeky] API ${method} /api${endpoint}`);
                         const response = await fetch(`/api${endpoint}`, options);
                         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        return await response.json();
+                        const result = await response.json();
+                        console.log(`[Cheeky] API response:`, result);
+                        return result;
                     } catch (error) {
-                        console.error(`[Cheeky] API Error: ${error.message}`);
+                        console.error(`[Cheeky] API Error on ${endpoint}: ${error.message}`);
                         return null;
                     }
                 },

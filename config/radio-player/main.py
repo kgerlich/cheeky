@@ -438,6 +438,37 @@ async def health_check():
         "version": "1.1.0"
     }
 
+@app.get("/api/stations/test")
+async def test_stations():
+    """Test endpoint with hardcoded stations (for development)"""
+    return {
+        "stations": [
+            {
+                "uuid": "test-1",
+                "name": "Test Station 1",
+                "url": "https://example.com/stream",
+                "favicon": "",
+                "country": "Test",
+                "language": "english",
+                "tags": ["test"],
+                "bitrate": 128,
+                "codec": "MP3"
+            },
+            {
+                "uuid": "test-2",
+                "name": "Test Station 2",
+                "url": "https://example.com/stream2",
+                "favicon": "",
+                "country": "Test",
+                "language": "english",
+                "tags": ["test"],
+                "bitrate": 192,
+                "codec": "AAC"
+            }
+        ],
+        "total": 2
+    }
+
 # ============================================================================
 # Startup & Shutdown
 # ============================================================================
