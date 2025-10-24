@@ -111,6 +111,7 @@ jobs:
           # Re-mount image to extract kernel/initrd
           sudo qemu-nbd -f qcow2 --connect=/dev/nbd0 debian-12-arm64.qcow2
           sleep 2
+          sudo mkdir -p /mnt/cheeky-img
           sudo mount /dev/nbd0p1 /mnt/cheeky-img
 
           # Copy kernel and initrd
