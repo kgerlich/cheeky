@@ -96,10 +96,19 @@ jobs:
             echo "nameserver 8.8.8.8" | sudo tee /mnt/cheeky-img/etc/resolv.conf > /dev/null
             echo "nameserver 8.8.4.4" | sudo tee -a /mnt/cheeky-img/etc/resolv.conf > /dev/null
 
-            # Replace mirror-based sources.list with direct Debian repositories
+            # Remove all mirror-based sources and replace with direct Debian repositories
+            sudo rm -rf /mnt/cheeky-img/etc/apt/sources.list.d/*
             echo "deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware" | sudo tee /mnt/cheeky-img/etc/apt/sources.list > /dev/null
             echo "deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware" | sudo tee -a /mnt/cheeky-img/etc/apt/sources.list > /dev/null
             echo "deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware" | sudo tee -a /mnt/cheeky-img/etc/apt/sources.list > /dev/null
+
+            # Test DNS resolution from within chroot before proceeding
+            echo "Testing DNS resolution in chroot..."
+            sudo chroot /mnt/cheeky-img /usr/bin/getent hosts deb.debian.org || {
+              echo "ERROR: DNS resolution not working in chroot"
+              sudo cat /mnt/cheeky-img/etc/resolv.conf
+              exit 1
+            }
 
             # Copy Cheeky configuration files and installation script
             sudo mkdir -p /mnt/cheeky-img/root/cheeky
