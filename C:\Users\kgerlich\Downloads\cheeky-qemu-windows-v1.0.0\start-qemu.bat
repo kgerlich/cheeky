@@ -1,0 +1,23 @@
+@echo off
+setlocal enabledelayedexpansion
+set VERSION=v1.0.0
+set REPO=kgerlich/cheeky
+set IMAGE_FILE=cheeky-qemu-ubuntu-minimal-!VERSION!.qcow2
+set IMAGE_URL=https://github.com/!REPO!/releases/download/!VERSION!/!IMAGE_FILE!
+echo Cheeky QEMU Launcher
+if not exist "!IMAGE_FILE!" (
+    echo Downloading image...
+    powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_FILE!'"
+)
+if not exist "!IMAGE_FILE!" (
+    echo Download failed
+    pause
+    exit /b 1
+)
+echo Starting QEMU...
+set QEMU_EXE=qemu-system-aarch64.exe
+if not "%~1"=="" (
+    set QEMU_EXE=%~1\qemu-system-aarch64.exe
+)
+"!QEMU_EXE!" -nographic -machine virt -cpu cortex-a72 -m 2048 -drive file="!IMAGE_FILE!",if=none,format=qcow2,id=hd -device virtio-blk-device,drive=hd -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22 -device virtio-net-device,netdev=net0 -serial telnet:localhost:4555,server,nowait
+pause

@@ -1,0 +1,17 @@
+# Cheeky Radio Player - Python Dependencies
+# FastAPI & Web Server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Data Validation & Config
+pydantic==2.5.0
+
+# HTTP Client (for Radio Browser API)
+aiohttp==3.9.0
+
+# WebSocket Support
+websockets==12.0
+
+# MPV Player Control
+python-mpv==1.0.4

@@ -12,55 +12,68 @@ echo "[Cheeky] Installing core dependencies..."
 apt-get install -y -qq \
   python3-pip \
   python3-dev \
-  python3-gi \
-  python3-dbus \
   build-essential \
+  python3-dbus \
   pulseaudio \
   pulseaudio-utils \
   bluez \
-  alsa-utils \
+  mpv \
+  libmpv1 \
   avahi-daemon \
   wget \
   curl \
-  git \
-  gstreamer1.0-tools \
-  gstreamer1.0-plugins-good \
-  gstreamer1.0-plugins-bad \
-  gstreamer1.0-plugins-ugly \
-  gir1.2-gstreamer-1.0 \
-  gir1.2-gst-plugins-base-1.0
+  git
 
 echo "[Cheeky] Installing Python packages..."
 pip3 install --break-system-packages \
-  mopidy \
-  mopidy-iris \
-  mopidy-tunein \
-  fastapi==0.109.0 \
-  uvicorn[standard]==0.27.0 \
+  fastapi==0.104.1 \
+  uvicorn[standard]==0.24.0 \
+  aiohttp==3.9.0 \
   pydantic==2.5.0 \
-  python-multipart==0.0.6
+  websockets==12.0 \
+  python-multipart==0.0.6 \
+  python-mpv==1.0.4
 
-echo "[Cheeky] Creating Mopidy configuration..."
-mkdir -p /etc/mopidy
-cp /root/cheeky/config/mopidy.conf /etc/mopidy/mopidy.conf
+echo "[Cheeky] Installing Radio Player..."
+mkdir -p /opt/cheeky/radio-player
+cp -r /root/cheeky/config/radio-player/* /opt/cheeky/radio-player/
 
-# Create Mopidy system user
-useradd -r -m -s /bin/false -d /var/lib/mopidy mopidy 2>/dev/null || true
-mkdir -p /var/lib/mopidy/media
-chown -R mopidy:mopidy /var/lib/mopidy
+# Create config directory
+mkdir -p /etc/cheeky
+cat > /etc/cheeky/settings.json << 'EOF'
+{
+  "volume": 75,
+  "last_station": null,
+  "bluetooth_device": ""
+}
+EOF
 
-echo "[Cheeky] Creating Mopidy systemd service..."
-cat > /etc/systemd/system/mopidy.service << 'EOF'
+cat > /etc/cheeky/favorites.json << 'EOF'
+{
+  "favorites": []
+}
+EOF
+
+cat > /etc/cheeky/recent.json << 'EOF'
+{
+  "recent": []
+}
+EOF
+
+echo "[Cheeky] Creating Radio Player systemd service..."
+cat > /etc/systemd/system/cheeky-radio-player.service << 'EOF'
 [Unit]
-Description=Mopidy Music Server
-After=network.target sound.target
+Description=Cheeky Radio Player
+After=network.target sound.target pulseaudio.service
 
 [Service]
 Type=simple
-User=mopidy
-ExecStart=/usr/local/bin/mopidy --config /etc/mopidy/mopidy.conf
+User=root
+WorkingDirectory=/opt/cheeky/radio-player
+ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 6680
 Restart=always
 RestartSec=10
+Environment="CHEEKY_CONFIG=/etc/cheeky"
 
 [Install]
 WantedBy=multi-user.target
@@ -107,7 +120,7 @@ EOF
 
 echo "[Cheeky] Enabling services..."
 systemctl daemon-reload
-systemctl enable mopidy
+systemctl enable cheeky-radio-player
 systemctl enable cheeky-bluetooth-manager
 systemctl enable cheeky-bluetooth-reconnect
 systemctl enable bluetooth
