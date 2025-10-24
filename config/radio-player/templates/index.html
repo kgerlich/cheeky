@@ -251,7 +251,7 @@
                     </div>
 
                     <!-- Browse Section -->
-                    <div>
+                    <div class="mb-8">
                         <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
                             <span>📂</span> Browse
                         </h3>
@@ -268,6 +268,63 @@
                             >
                                 Popular
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Bluetooth Manager Section -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <span>🔵</span> Speakers
+                        </h3>
+
+                        <!-- Scan Button -->
+                        <button
+                            @click="scanBluetoothDevices()"
+                            class="w-full px-3 py-2 rounded-lg bg-cheeky-cyan text-cheeky-dark font-semibold hover:bg-cheeky-cyan/80 transition-all mb-4 text-sm"
+                        >
+                            🔍 Scan
+                        </button>
+
+                        <!-- Devices List -->
+                        <div class="space-y-2">
+                            <template x-for="device in bluetoothDevices" :key="device.mac">
+                                <div class="bg-cheeky-charcoal rounded-lg p-3 border border-cheeky-blue/20">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold truncate text-sm" :title="device.name" x-text="device.name"></p>
+                                            <p class="text-xs text-cheeky-text-muted" x-text="device.mac"></p>
+                                        </div>
+                                        <div class="flex gap-1 ml-2">
+                                            <span x-show="device.connected" class="text-xs px-2 py-1 rounded bg-cheeky-cyan/20 text-cheeky-cyan">Connected</span>
+                                            <span x-show="!device.connected && device.paired" class="text-xs px-2 py-1 rounded bg-cheeky-blue/20 text-cheeky-blue">Paired</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button
+                                            x-show="!device.connected"
+                                            @click="connectBluetoothDevice(device.mac)"
+                                            class="flex-1 px-2 py-1 rounded text-xs bg-cheeky-blue hover:bg-cheeky-cyan text-cheeky-text hover:text-cheeky-dark transition-all"
+                                        >
+                                            Connect
+                                        </button>
+                                        <button
+                                            x-show="device.connected"
+                                            @click="disconnectBluetoothDevice(device.mac)"
+                                            class="flex-1 px-2 py-1 rounded text-xs bg-red-900/50 hover:bg-red-700 text-red-200 transition-all"
+                                        >
+                                            Disconnect
+                                        </button>
+                                        <button
+                                            @click="removeBluetoothDevice(device.mac)"
+                                            class="px-2 py-1 rounded text-xs bg-red-900/30 hover:bg-red-900/50 text-red-300 transition-all"
+                                            title="Remove Device"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                            <p x-show="bluetoothDevices.length === 0" class="text-cheeky-text-muted text-sm italic">No Bluetooth devices</p>
                         </div>
                     </div>
                 </aside>
@@ -377,12 +434,14 @@
                 currentStation: null,
                 currentMetadata: {},
                 showBrowseGenre: false,
+                bluetoothDevices: [],
                 ws: null,
 
                 // Initialize
                 async init() {
                     await this.loadFavorites();
                     await this.loadRecent();
+                    await this.loadBluetoothDevices();
                     await this.loadPopular();
                     await this.loadStatus();
                     this.connectWebSocket();
@@ -614,6 +673,49 @@
                         if (result.station) {
                             this.currentStation = result.station;
                             this.isFavorite = await this.isStationFavorite(result.station.uuid);
+                        }
+                    }
+                },
+
+                // Bluetooth Management
+                async loadBluetoothDevices() {
+                    const result = await this.apiCall('GET', '/bluetooth/devices');
+                    if (result) {
+                        this.bluetoothDevices = result.devices || [];
+                    }
+                },
+
+                async scanBluetoothDevices() {
+                    const result = await this.apiCall('POST', '/bluetooth/scan');
+                    if (result) {
+                        console.log('[Cheeky] Scanning for Bluetooth devices...');
+                        // Reload devices after scan
+                        setTimeout(() => this.loadBluetoothDevices(), 2000);
+                    }
+                },
+
+                async connectBluetoothDevice(mac) {
+                    const result = await this.apiCall('POST', '/bluetooth/connect', { mac });
+                    if (result) {
+                        console.log(`[Cheeky] Connected to ${mac}`);
+                        await this.loadBluetoothDevices();
+                    }
+                },
+
+                async disconnectBluetoothDevice(mac) {
+                    const result = await this.apiCall('POST', '/bluetooth/disconnect', { mac });
+                    if (result) {
+                        console.log(`[Cheeky] Disconnected from ${mac}`);
+                        await this.loadBluetoothDevices();
+                    }
+                },
+
+                async removeBluetoothDevice(mac) {
+                    if (confirm(`Remove ${mac}?`)) {
+                        const result = await this.apiCall('POST', '/bluetooth/remove', { mac });
+                        if (result) {
+                            console.log(`[Cheeky] Removed ${mac}`);
+                            await this.loadBluetoothDevices();
                         }
                     }
                 },
