@@ -22,7 +22,13 @@ apt-get install -y -qq \
   avahi-daemon \
   wget \
   curl \
-  git
+  git \
+  gstreamer1.0-tools \
+  gstreamer1.0-plugins-good \
+  gstreamer1.0-plugins-bad \
+  gstreamer1.0-plugins-ugly \
+  gir1.2-gstreamer-1.0 \
+  gir1.2-gst-plugins-base-1.0
 
 echo "[Cheeky] Installing Python packages..."
 pip3 install --break-system-packages \
