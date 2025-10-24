@@ -1,12 +1,6 @@
 @echo off
 REM Cheeky QEMU Launcher for Windows
-REM Downloads and runs Ubuntu QEMU image with Cheeky pre-installed
-REM
-REM Usage:
-REM   start-qemu.bat [QEMU_DIR]
-REM
-REM Arguments:
-REM   QEMU_DIR - Directory containing QEMU files (default: script directory)
+REM Downloads and runs QEMU image with Cheeky pre-installed
 
 setlocal enabledelayedexpansion
 
@@ -15,60 +9,27 @@ set REPO=REPO_PLACEHOLDER
 set IMAGE_FILE=cheeky-qemu-ubuntu-minimal-!VERSION!.qcow2
 set IMAGE_URL=https://github.com/!REPO!/releases/download/!VERSION!/!IMAGE_FILE!
 
-REM Set directories
-set SCRIPT_DIR=%~dp0
-set WORK_DIR=%cd%
-
-REM Set QEMU directory from parameter or default to script directory
-if "%~1"=="" (
-    set QEMU_DIR=%~dp0
-) else (
-    set QEMU_DIR=%~1
-)
-
 echo ==========================================
 echo Cheeky QEMU Launcher for Windows
 echo ==========================================
 echo.
-echo QEMU Dir: !QEMU_DIR!
-echo Work Dir: !WORK_DIR!
+echo Image: !IMAGE_FILE!
 echo.
 
-REM Check if QEMU exists
-set QEMU_EXE=!QEMU_DIR!\qemu-system-aarch64.exe
-if not exist "!QEMU_EXE!" (
-    echo Error: QEMU not found
-    echo Expected: !QEMU_EXE!
-    echo.
-    echo Please download QEMU from https://qemu.weilnetz.de/
-    echo Run: start-qemu.bat "C:\path\to\qemu"
-    echo.
-    pause
-    exit /b 1
-)
-
-REM Download image if needed (qcow2 format)
+REM Download image if needed
 if not exist "!IMAGE_FILE!" (
-    echo Downloading Cheeky QEMU image approximately 1.5GB...
-    echo From: !IMAGE_URL!
-
-    REM Use BitsTransfer for faster downloads
-    echo Downloading using Windows BitsTransfer (optimized for large files)...
-    powershell -Command "Import-Module BitsTransfer; Start-BitsTransfer -Source '!IMAGE_URL!' -Destination '!IMAGE_FILE!' -Asynchronous; Get-BitsTransfer | Resume-BitsTransfer"
+    echo Downloading image, please wait...
+    echo.
+    powershell -Command "Import-Module BitsTransfer; Start-BitsTransfer -Source '!IMAGE_URL!' -Destination '!IMAGE_FILE!'; Get-BitsTransfer | where {$_.JobState -eq 'Transferred'} | Complete-BitsTransfer" 2>nul
 
     if !errorlevel! neq 0 (
-        echo BitsTransfer failed, trying Invoke-WebRequest as fallback...
-        powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_FILE!' -UseBasicParsing"
+        powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_FILE!' -UseBasicParsing" 2>nul
     )
 
-    if !errorlevel! neq 0 (
-        echo Download failed
-        if not defined GITHUB_TOKEN (
-            echo.
-            echo If repository is private, set GITHUB_TOKEN environment variable:
-            echo   set GITHUB_TOKEN=your_personal_access_token
-            echo   start-qemu.bat "C:\path\to\qemu"
-        )
+    if not exist "!IMAGE_FILE!" (
+        echo.
+        echo Download failed. Make sure you have internet access.
+        echo.
         pause
         exit /b 1
     )
@@ -76,16 +37,22 @@ if not exist "!IMAGE_FILE!" (
 
 echo.
 echo Starting QEMU...
-echo This may take 1-2 minutes to boot (Ubuntu first-time setup)
+echo Boot time: 1-2 minutes
 echo.
-echo Once booted, open in your browser:
-echo   Radio: http://localhost:6680
-echo   Bluetooth Manager: http://localhost:8080
-echo   SSH: ssh -p 2222 ubuntu@localhost (password: ubuntu)
+echo Access after boot:
+echo - Radio: http://localhost:6680
+echo - Bluetooth: http://localhost:8080
+echo - SSH: ssh -p 2222 root@localhost
 echo.
 
-REM Run QEMU with qcow2 image
-"!QEMU_DIR!\qemu-system-aarch64.exe" ^
+REM Set QEMU directory from parameter or use qemu-system-aarch64 from PATH
+if "%~1"=="" (
+    set QEMU_EXE=qemu-system-aarch64.exe
+) else (
+    set QEMU_EXE=%~1\qemu-system-aarch64.exe
+)
+
+"!QEMU_EXE!" ^
     -nographic ^
     -machine virt ^
     -cpu cortex-a72 ^
@@ -97,8 +64,6 @@ REM Run QEMU with qcow2 image
     -serial telnet:localhost:4555,server,nowait
 
 echo.
-echo ==========================================
 echo QEMU has exited
-echo ==========================================
 echo.
 pause
