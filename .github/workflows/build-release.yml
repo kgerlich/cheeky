@@ -92,8 +92,9 @@ jobs:
             # Copy qemu-aarch64-static for ARM64 emulation in chroot
             sudo cp /usr/bin/qemu-aarch64-static /mnt/cheeky-img/usr/bin/
 
-            # Copy DNS for package installation
-            sudo cp /etc/resolv.conf /mnt/cheeky-img/etc/resolv.conf
+            # Configure DNS for package installation (use Google DNS for reliability)
+            echo "nameserver 8.8.8.8" | sudo tee /mnt/cheeky-img/etc/resolv.conf > /dev/null
+            echo "nameserver 8.8.4.4" | sudo tee -a /mnt/cheeky-img/etc/resolv.conf > /dev/null
 
             # Copy Cheeky configuration files and installation script
             sudo mkdir -p /mnt/cheeky-img/root/cheeky
