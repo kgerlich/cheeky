@@ -75,12 +75,11 @@ echo "  Bluetooth Manager: http://localhost:8080"
 echo "  SSH: ssh -p 2222 pi@localhost (password: raspberry)"
 echo ""
 
-# Run QEMU with qcow2 image and port forwarding
+# Run QEMU with qcow2 image and port forwarding using Raspberry Pi 3B emulation
 qemu-system-aarch64 \
     -nographic \
-    -machine virt \
-    -cpu cortex-a72 \
-    -m 2048 \
+    -machine raspi3b \
+    -m 1024 \
     -drive "file=$IMAGE_FILE,if=none,format=qcow2,id=hd" \
     -device virtio-blk-device,drive=hd \
     -netdev "user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22" \
