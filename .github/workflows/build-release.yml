@@ -66,7 +66,7 @@ jobs:
 
           # Use qemu-nbd to mount Raspberry Pi OS image
           sudo modprobe nbd max_part=16
-          sudo qemu-nbd --connect=/dev/nbd0 "$IMAGE_FILE"
+          sudo qemu-nbd -f raw --connect=/dev/nbd0 "$IMAGE_FILE"
           sleep 2
 
           # Find partition (usually p1 on cloud images)
