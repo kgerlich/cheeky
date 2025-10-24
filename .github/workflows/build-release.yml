@@ -56,31 +56,26 @@ jobs:
 
           # Install image manipulation tools
           sudo apt-get update -qq
-          sudo apt-get install -y -qq qemu-utils kpartx > /dev/null 2>&1
+          sudo apt-get install -y -qq qemu-utils > /dev/null 2>&1
 
           echo "Customizing Ubuntu image for Cheeky..."
 
-          # Resize image to 10GB
-          qemu-img resize ubuntu-24.04-arm64.img 10G
+          # Use qemu-nbd to mount cloud image (handles cloud images properly)
+          sudo modprobe nbd max_part=16
+          sudo qemu-nbd --connect=/dev/nbd0 ubuntu-24.04-arm64.img
+          sleep 2
 
-          # Mount using kpartx (handles partitions automatically)
-          LOOP_DEV=$(sudo losetup -f)
-          sudo losetup "$LOOP_DEV" ubuntu-24.04-arm64.img
-          sudo kpartx -av "$LOOP_DEV"
-
-          # Get the partition name from kpartx
-          PART_NAME=$(basename $(sudo kpartx -l "$LOOP_DEV" 2>/dev/null | grep -oP '/dev/mapper/\S+' | head -1))
-
-          if [ -z "$PART_NAME" ]; then
-            echo "ERROR: Could not identify partition from kpartx"
-            sudo kpartx -dv "$LOOP_DEV"
-            sudo losetup -d "$LOOP_DEV"
+          # Find partition (usually p1 on cloud images)
+          PART_DEV="/dev/nbd0p1"
+          if [ ! -b "$PART_DEV" ]; then
+            echo "ERROR: Partition $PART_DEV not found"
+            sudo qemu-nbd --disconnect /dev/nbd0
             exit 1
           fi
 
-          echo "Mounting partition: /dev/mapper/$PART_NAME"
+          echo "Mounting partition: $PART_DEV"
           sudo mkdir -p /mnt/cheeky-ubuntu
-          sudo mount "/dev/mapper/$PART_NAME" /mnt/cheeky-ubuntu
+          sudo mount "$PART_DEV" /mnt/cheeky-ubuntu
 
           if mountpoint -q /mnt/cheeky-ubuntu; then
             echo "Installing Cheeky components..."
@@ -95,15 +90,13 @@ jobs:
             sudo umount /mnt/cheeky-ubuntu
           else
             echo "ERROR: Could not mount filesystem"
-            sudo kpartx -dv "$LOOP_DEV"
-            sudo losetup -d "$LOOP_DEV"
+            sudo qemu-nbd --disconnect /dev/nbd0
             exit 1
           fi
 
           # Cleanup
-          sudo kpartx -dv "$LOOP_DEV"
-          sudo losetup -d "$LOOP_DEV"
           sudo rmdir /mnt/cheeky-ubuntu 2>/dev/null || true
+          sudo qemu-nbd --disconnect /dev/nbd0
 
           echo "Image customization complete"
           ls -lh ubuntu-24.04-arm64.img
@@ -115,13 +108,17 @@ jobs:
 
           echo "Converting to qcow2 format for QEMU..."
           qemu-img convert -c -O qcow2 ubuntu-24.04-arm64.img cheeky-qemu-ubuntu-${VERSION}.qcow2
+
+          echo "Image size:"
+          ls -lh cheeky-qemu-ubuntu-${VERSION}.qcow2
+
           sha256sum cheeky-qemu-ubuntu-${VERSION}.qcow2 > cheeky-qemu-ubuntu-${VERSION}.qcow2.sha256
 
           # Move to release assets
           cp cheeky-qemu-ubuntu-${VERSION}.qcow2* ${GITHUB_WORKSPACE}/release-assets/
 
           echo "QEMU image ready"
-          ls -lh cheeky-qemu-ubuntu-${VERSION}.qcow2*
+          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-qemu-ubuntu-${VERSION}.qcow2*
 
       - name: Create physical Pi img.xz image
         run: |
