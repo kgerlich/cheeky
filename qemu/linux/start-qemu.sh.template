@@ -15,7 +15,7 @@ set -e
 
 VERSION="VERSION_PLACEHOLDER"
 REPO="REPO_PLACEHOLDER"
-IMAGE_FILE="cheeky-qemu-debian-${VERSION}.qcow2"
+IMAGE_FILE="cheeky-qemu-ubuntu-minimal-${VERSION}.qcow2"
 IMAGE_URL="https://github.com/${REPO}/releases/download/${VERSION}/${IMAGE_FILE}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -67,7 +67,7 @@ fi
 
 echo ""
 echo "Starting QEMU..."
-echo "This may take 1-2 minutes to boot (Debian first-time setup)"
+echo "This may take 1-2 minutes to boot (Ubuntu minimal first-time setup)"
 echo ""
 echo "Once booted, open in your browser:"
 echo "  Radio: http://localhost:6680"
