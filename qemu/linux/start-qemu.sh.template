@@ -72,7 +72,12 @@ echo ""
 echo "Once booted, open in your browser:"
 echo "  Radio: http://localhost:6680"
 echo "  Bluetooth Manager: http://localhost:8080"
-echo "  SSH: ssh -p 2222 debian@localhost"
+echo "  SSH: ssh -p 2222 debian@localhost (password: cheeky)"
+echo ""
+
+# Read root filesystem UUID for robust device identification
+ROOT_UUID=$(cat "$QEMU_DIR/root-uuid.txt")
+echo "Using root filesystem UUID: $ROOT_UUID"
 echo ""
 
 # Run QEMU with direct kernel boot (bypasses UEFI firmware requirement)
@@ -83,7 +88,7 @@ qemu-system-aarch64 \
     -m 2048 \
     -kernel "$QEMU_DIR/vmlinuz" \
     -initrd "$QEMU_DIR/initrd.img" \
-    -append "root=/dev/vda1 console=ttyAMA0 rw" \
+    -append "root=UUID=$ROOT_UUID console=ttyAMA0 rw" \
     -drive "file=$IMAGE_FILE,if=none,format=qcow2,id=hd" \
     -device virtio-blk-device,drive=hd \
     -drive "file=$QEMU_DIR/seed.iso,if=none,format=raw,id=seed" \

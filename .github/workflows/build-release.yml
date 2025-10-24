@@ -119,8 +119,13 @@ jobs:
           sudo cp /mnt/cheeky-img/boot/initrd.img-* initrd.img
           sudo chown $(whoami):$(whoami) vmlinuz initrd.img
 
+          # Get the UUID of the root filesystem for robust device identification
+          ROOT_UUID=$(sudo blkid -s UUID -o value /dev/nbd0p1)
+          echo "Root filesystem UUID: $ROOT_UUID"
+          echo "$ROOT_UUID" > root-uuid.txt
+
           echo "Extracted files:"
-          ls -lh vmlinuz initrd.img
+          ls -lh vmlinuz initrd.img root-uuid.txt
 
           # Cleanup
           sudo umount /mnt/cheeky-img
@@ -209,17 +214,20 @@ jobs:
           REPO="${{ github.repository }}"
           mkdir -p qemu-build/{linux,macos,windows}
 
-          # Copy kernel, initrd, and cloud-init seed to build directory
+          # Copy kernel, initrd, cloud-init seed, and UUID to build directory
           cd /tmp/cheeky-build
           cp vmlinuz ${GITHUB_WORKSPACE}/qemu-build/linux/
           cp initrd.img ${GITHUB_WORKSPACE}/qemu-build/linux/
           cp seed.iso ${GITHUB_WORKSPACE}/qemu-build/linux/
+          cp root-uuid.txt ${GITHUB_WORKSPACE}/qemu-build/linux/
           cp vmlinuz ${GITHUB_WORKSPACE}/qemu-build/macos/
           cp initrd.img ${GITHUB_WORKSPACE}/qemu-build/macos/
           cp seed.iso ${GITHUB_WORKSPACE}/qemu-build/macos/
+          cp root-uuid.txt ${GITHUB_WORKSPACE}/qemu-build/macos/
           cp vmlinuz ${GITHUB_WORKSPACE}/qemu-build/windows/
           cp initrd.img ${GITHUB_WORKSPACE}/qemu-build/windows/
           cp seed.iso ${GITHUB_WORKSPACE}/qemu-build/windows/
+          cp root-uuid.txt ${GITHUB_WORKSPACE}/qemu-build/windows/
 
           cd ${GITHUB_WORKSPACE}
 
