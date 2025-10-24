@@ -54,9 +54,12 @@ jobs:
           VERSION="${{ steps.version.outputs.VERSION }}"
           cd /tmp/cheeky-build
 
-          # Install image manipulation tools
+          # Install image manipulation tools and ARM64 emulation
           sudo apt-get update -qq
-          sudo apt-get install -y -qq qemu-utils > /dev/null 2>&1
+          sudo apt-get install -y -qq qemu-utils qemu-user-static binfmt-support > /dev/null 2>&1
+
+          # Register ARM64 binary format for execution on x86_64
+          sudo update-binfmts --enable qemu-aarch64
 
           IMAGE_FILE="debian-12-arm64.qcow2"
           echo "Customizing Debian cloud image for Cheeky..."
@@ -85,6 +88,9 @@ jobs:
             sudo mount --bind /dev /mnt/cheeky-img/dev
             sudo mount --bind /proc /mnt/cheeky-img/proc
             sudo mount --bind /sys /mnt/cheeky-img/sys
+
+            # Copy qemu-aarch64-static for ARM64 emulation in chroot
+            sudo cp /usr/bin/qemu-aarch64-static /mnt/cheeky-img/usr/bin/
 
             # Copy DNS for package installation
             sudo cp /etc/resolv.conf /mnt/cheeky-img/etc/resolv.conf
