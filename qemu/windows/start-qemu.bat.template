@@ -30,8 +30,8 @@ echo Using root filesystem UUID: !ROOT_UUID!
 echo.
 echo Once booted, open in your browser:
 echo   Radio: http://localhost:6680
-echo   Bluetooth Manager: http://localhost:8080
+echo   Bluetooth Manager: http://localhost:9000
 echo   SSH: ssh -p 2222 debian@localhost (password: cheeky)
 echo.
-"!QEMU_EXE!" -nographic -machine virt -cpu cortex-a72 -m 2048 -kernel "!SCRIPT_DIR!vmlinuz" -initrd "!SCRIPT_DIR!initrd.img" -append "root=UUID=!ROOT_UUID! console=ttyAMA0 rw" -drive file="!IMAGE_FILE!",if=none,format=qcow2,id=hd -device virtio-blk-device,drive=hd -drive file="!SCRIPT_DIR!seed.iso",if=none,format=raw,id=seed -device virtio-blk-device,drive=seed -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22 -device virtio-net-device,netdev=net0
+"!QEMU_EXE!" -nographic -machine virt -cpu cortex-a72 -m 2048 -kernel "!SCRIPT_DIR!vmlinuz" -initrd "!SCRIPT_DIR!initrd.img" -append "root=UUID=!ROOT_UUID! console=ttyAMA0 rw" -drive file="!IMAGE_FILE!",if=none,format=qcow2,id=hd -device virtio-blk-device,drive=hd -drive file="!SCRIPT_DIR!seed.iso",if=none,format=raw,id=seed -device virtio-blk-device,drive=seed -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::9000-:9000,hostfwd=tcp::2222-:22 -device virtio-net-device,netdev=net0
 pause

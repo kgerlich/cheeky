@@ -79,7 +79,7 @@ After=network.target bluetooth.service
 Type=simple
 User=root
 WorkingDirectory=/opt/cheeky/bluetooth-web-manager
-ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8080
+ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 9000
 Restart=always
 RestartSec=10
 

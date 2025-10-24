@@ -71,7 +71,7 @@ echo "This may take 1-2 minutes to boot"
 echo ""
 echo "Once booted, open in your browser:"
 echo "  Radio: http://localhost:6680"
-echo "  Bluetooth Manager: http://localhost:8080"
+echo "  Bluetooth Manager: http://localhost:9000"
 echo "  SSH: ssh -p 2222 debian@localhost (password: cheeky)"
 echo ""
 
@@ -93,7 +93,7 @@ qemu-system-aarch64 \
     -device virtio-blk-device,drive=hd \
     -drive "file=$QEMU_DIR/seed.iso,if=none,format=raw,id=seed" \
     -device virtio-blk-device,drive=seed \
-    -netdev "user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22" \
+    -netdev "user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::9000-:9000,hostfwd=tcp::2222-:22" \
     -device virtio-net-device,netdev=net0
 
 echo ""
