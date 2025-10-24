@@ -20,6 +20,7 @@ from backend.stations import StationsClient
 from backend.favorites import FavoritesManager
 from backend.recent import RecentManager
 from backend.websocket import WebSocketManager
+from backend.bluetooth import BluetoothManager
 
 # ============================================================================
 # Configuration
@@ -50,6 +51,7 @@ stations_client = StationsClient()
 favorites_mgr = FavoritesManager(CONFIG_DIR)
 recent_mgr = RecentManager(CONFIG_DIR)
 ws_manager = WebSocketManager()
+bluetooth_mgr = BluetoothManager()
 
 # ============================================================================
 # Request/Response Models
@@ -307,6 +309,88 @@ async def get_recent():
         raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
+# Bluetooth Management Endpoints
+# ============================================================================
+
+@app.get("/api/bluetooth/devices")
+async def get_bluetooth_devices():
+    """Get list of paired Bluetooth devices"""
+    try:
+        devices = await bluetooth_mgr.get_devices()
+        return {"devices": devices}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/bluetooth/status")
+async def get_bluetooth_status():
+    """Get Bluetooth adapter status"""
+    try:
+        status = await bluetooth_mgr.get_adapter_status()
+        if status:
+            return status
+        else:
+            raise HTTPException(status_code=500, detail="Could not get Bluetooth status")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/bluetooth/scan")
+async def scan_bluetooth_devices():
+    """Start scanning for new Bluetooth devices"""
+    try:
+        result = await bluetooth_mgr.scan_devices()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/bluetooth/pair")
+async def pair_bluetooth_device(request: dict):
+    """Pair a new Bluetooth device"""
+    mac = request.get("mac")
+    if not mac:
+        raise HTTPException(status_code=400, detail="MAC address required")
+    try:
+        result = await bluetooth_mgr.pair_device(mac)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/bluetooth/connect")
+async def connect_bluetooth_device(request: dict):
+    """Connect to a paired Bluetooth device"""
+    mac = request.get("mac")
+    if not mac:
+        raise HTTPException(status_code=400, detail="MAC address required")
+    try:
+        result = await bluetooth_mgr.connect_device(mac)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/bluetooth/disconnect")
+async def disconnect_bluetooth_device(request: dict):
+    """Disconnect from a Bluetooth device"""
+    mac = request.get("mac")
+    if not mac:
+        raise HTTPException(status_code=400, detail="MAC address required")
+    try:
+        result = await bluetooth_mgr.disconnect_device(mac)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/bluetooth/remove")
+async def remove_bluetooth_device(request: dict):
+    """Remove a paired Bluetooth device"""
+    mac = request.get("mac")
+    if not mac:
+        raise HTTPException(status_code=400, detail="MAC address required")
+    try:
+        result = await bluetooth_mgr.remove_device(mac)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
 # WebSocket Endpoint
 # ============================================================================
 
@@ -381,6 +465,6 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=6680,
+        port=80,
         log_level="info"
     )

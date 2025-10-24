@@ -70,31 +70,10 @@ After=network.target sound.target pulseaudio.service
 Type=simple
 User=root
 WorkingDirectory=/opt/cheeky/radio-player
-ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 6680
+ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 80
 Restart=always
 RestartSec=10
 Environment="CHEEKY_CONFIG=/etc/cheeky"
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-echo "[Cheeky] Installing Bluetooth Manager..."
-mkdir -p /opt/cheeky/bluetooth-web-manager
-cp -r /root/cheeky/config/bluetooth-web-manager/* /opt/cheeky/bluetooth-web-manager/
-
-cat > /etc/systemd/system/cheeky-bluetooth-manager.service << 'EOF'
-[Unit]
-Description=Cheeky Bluetooth Manager
-After=network.target bluetooth.service
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/opt/cheeky/bluetooth-web-manager
-ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 9000
-Restart=always
-RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
@@ -121,7 +100,6 @@ EOF
 echo "[Cheeky] Enabling services..."
 systemctl daemon-reload
 systemctl enable cheeky-radio-player
-systemctl enable cheeky-bluetooth-manager
 systemctl enable cheeky-bluetooth-reconnect
 systemctl enable bluetooth
 systemctl enable avahi-daemon
