@@ -18,7 +18,6 @@ apt-get install -y -qq \
   pulseaudio-utils \
   bluez \
   mpv \
-  libmpv1 \
   avahi-daemon \
   wget \
   curl \
