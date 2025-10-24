@@ -12,13 +12,12 @@ echo "[Cheeky] Installing core dependencies..."
 apt-get install -y -qq \
   python3-pip \
   python3-dev \
-  python3-glib \
+  python3-gi \
   python3-dbus \
   build-essential \
   pulseaudio \
   pulseaudio-utils \
   bluez \
-  bluez-tools \
   alsa-utils \
   avahi-daemon \
   wget \
