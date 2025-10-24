@@ -32,145 +32,97 @@ jobs:
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download and customize DietPi images
+      - name: Download Ubuntu 24.04 LTS cloud image
         run: |
           mkdir -p release-assets
-          echo "Building Cheeky DietPi images..."
+          mkdir -p /tmp/cheeky-build
+          cd /tmp/cheeky-build
 
-          # Install dependencies for image manipulation
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq kpartx qemu-utils binfmt-support qemu-user-static > /dev/null 2>&1
-
-          # Map architecture to DietPi image filename
-          declare -A dietpi_images=(
-            [armv6]="DietPi_RPi1-ARMv6-Bookworm"
-            [armv7]="DietPi_RPi2-ARMv7-Bookworm"
-            [armv8]="DietPi_RPi234-ARMv8-Bookworm"
-          )
-
-          for arch in armv6 armv7 armv8; do
-            echo ""
-            echo "=========================================="
-            echo "Building $arch image..."
-            echo "=========================================="
-
-            IMG_FILE="/tmp/dietpi-${arch}.img"
-            IMG_XZ="release-assets/cheeky-${arch}-${{ steps.version.outputs.VERSION }}.img.xz"
-            DIETPI_IMG="${dietpi_images[$arch]}"
-
-            # Download DietPi image from official source
-            echo "Downloading DietPi $arch image: $DIETPI_IMG.img.xz"
-            wget -q --show-progress \
-              "https://dietpi.com/downloads/images/${DIETPI_IMG}.img.xz" \
-              -O "/tmp/dietpi-${arch}.img.xz" || {
-              echo "ERROR: Failed to download DietPi $arch image"
-              exit 1
-            }
-
-            # Extract image for customization
-            echo "Extracting image for customization..."
-            xz -d "/tmp/dietpi-${arch}.img.xz"
-
-            # Find partition offset using fdisk
-            echo "Finding partition offset..."
-            PARTITION_START=$(sudo fdisk -lu "$IMG_FILE" 2>/dev/null | grep "\.img2" | awk '{print $2}')
-            if [ -z "$PARTITION_START" ]; then
-              echo "ERROR: Could not find partition in image"
-              exit 1
-            fi
-            OFFSET=$((PARTITION_START * 512))
-            echo "Partition starts at sector $PARTITION_START (offset: $OFFSET bytes)"
-
-            # Mount with calculated offset
-            echo "Mounting filesystem..."
-            sudo mkdir -p /mnt/cheeky-${arch}
-            sudo mount -o loop,offset=$OFFSET "$IMG_FILE" /mnt/cheeky-${arch}
-
-            if mountpoint -q /mnt/cheeky-${arch}; then
-              echo "Installing Cheeky components..."
-
-              # Copy configuration files
-              sudo cp -r config/bluetooth-web-manager /mnt/cheeky-${arch}/root/ 2>/dev/null || true
-              sudo cp -r config/mopidy.conf /mnt/cheeky-${arch}/root/ 2>/dev/null || true
-              sudo cp -r config/Automation_Custom_Script.sh /mnt/cheeky-${arch}/root/ 2>/dev/null || true
-
-              # Copy documentation
-              sudo cp -r docs /mnt/cheeky-${arch}/root/cheeky-docs 2>/dev/null || true
-
-              # Create version marker
-              sudo touch /mnt/cheeky-${arch}/root/.cheeky-${{ steps.version.outputs.VERSION }}
-
-              echo "Customization complete"
-              sudo umount /mnt/cheeky-${arch}
-            else
-              echo "WARNING: Could not mount filesystem, skipping customization"
-            fi
-
-            sudo rmdir /mnt/cheeky-${arch} 2>/dev/null || true
-
-            # Compress customized image
-            echo "Compressing customized image..."
-            xz -9v "$IMG_FILE"
-            mv "$IMG_FILE.xz" "$IMG_XZ"
-
-            # Checksum
-            sha256sum "$IMG_XZ" > "${IMG_XZ}.sha256"
-
-            echo "✓ $arch image complete ($(du -h $IMG_XZ | cut -f1))"
-          done
-
-          echo ""
-          echo "=========================================="
-          echo "Images ready!"
-          echo "=========================================="
-          ls -lah release-assets/
-
-      - name: Build QEMU Ubuntu image
-        run: |
-          VERSION="${{ steps.version.outputs.VERSION }}"
-          echo "Building QEMU-optimized Ubuntu image..."
-
-          # Download Ubuntu 24.04 LTS cloud image for ARM64 (optimized for QEMU)
-          echo "Downloading Ubuntu cloud image..."
+          echo "Downloading Ubuntu 24.04 LTS ARM64 cloud image..."
           wget -q --show-progress \
             "https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-arm64.img" \
-            -O /tmp/ubuntu-qemu.img || {
+            -O ubuntu-24.04-arm64.img || {
             echo "ERROR: Failed to download Ubuntu image"
             exit 1
           }
 
+          echo "Image downloaded successfully"
+          ls -lh ubuntu-24.04-arm64.img
+
+      - name: Customize Ubuntu image for Cheeky
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          cd /tmp/cheeky-build
+
+          # Install image manipulation tools
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq qemu-utils > /dev/null 2>&1
+
+          echo "Customizing Ubuntu image for Cheeky..."
+
           # Resize image to 10GB
-          echo "Resizing image to 10GB..."
-          qemu-img resize /tmp/ubuntu-qemu.img 10G
+          qemu-img resize ubuntu-24.04-arm64.img 10G
 
           # Mount and customize
-          echo "Mounting and customizing..."
           LOOP_DEV=$(sudo losetup -f)
-          sudo losetup "$LOOP_DEV" /tmp/ubuntu-qemu.img
+          sudo losetup "$LOOP_DEV" ubuntu-24.04-arm64.img
           sudo partprobe "$LOOP_DEV"
 
-          sudo mkdir -p /mnt/cheeky-qemu
-          sudo mount "${LOOP_DEV}p1" /mnt/cheeky-qemu
+          sudo mkdir -p /mnt/cheeky-ubuntu
+          sudo mount "${LOOP_DEV}p1" /mnt/cheeky-ubuntu
 
-          if mountpoint -q /mnt/cheeky-qemu; then
+          if mountpoint -q /mnt/cheeky-ubuntu; then
             echo "Installing Cheeky components..."
-            sudo mkdir -p /mnt/cheeky-qemu/root/cheeky
-            sudo cp -r config /mnt/cheeky-qemu/root/cheeky/ 2>/dev/null || true
-            sudo cp -r docs /mnt/cheeky-qemu/root/cheeky/ 2>/dev/null || true
-            sudo touch /mnt/cheeky-qemu/root/.cheeky-$VERSION
-            sudo umount /mnt/cheeky-qemu
+
+            # Copy configuration files
+            sudo mkdir -p /mnt/cheeky-ubuntu/root/cheeky
+            sudo cp -r ${GITHUB_WORKSPACE}/config /mnt/cheeky-ubuntu/root/cheeky/ 2>/dev/null || true
+            sudo cp -r ${GITHUB_WORKSPACE}/docs /mnt/cheeky-ubuntu/root/cheeky/ 2>/dev/null || true
+            sudo touch /mnt/cheeky-ubuntu/root/.cheeky-$VERSION
+
+            echo "Customization complete"
+            sudo umount /mnt/cheeky-ubuntu
+          else
+            echo "ERROR: Could not mount filesystem"
+            exit 1
           fi
 
           sudo losetup -d "$LOOP_DEV"
-          sudo rmdir /mnt/cheeky-qemu 2>/dev/null || true
+          sudo rmdir /mnt/cheeky-ubuntu 2>/dev/null || true
 
-          # Compress
-          echo "Compressing image..."
-          qemu-img convert -c -O qcow2 /tmp/ubuntu-qemu.img "release-assets/cheeky-qemu-ubuntu-${VERSION}.qcow2"
-          sha256sum "release-assets/cheeky-qemu-ubuntu-${VERSION}.qcow2" > "release-assets/cheeky-qemu-ubuntu-${VERSION}.qcow2.sha256"
+          echo "Image customization complete"
+          ls -lh ubuntu-24.04-arm64.img
+
+      - name: Create QEMU qcow2 image
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          cd /tmp/cheeky-build
+
+          echo "Converting to qcow2 format for QEMU..."
+          qemu-img convert -c -O qcow2 ubuntu-24.04-arm64.img cheeky-qemu-ubuntu-${VERSION}.qcow2
+          sha256sum cheeky-qemu-ubuntu-${VERSION}.qcow2 > cheeky-qemu-ubuntu-${VERSION}.qcow2.sha256
+
+          # Move to release assets
+          cp cheeky-qemu-ubuntu-${VERSION}.qcow2* ${GITHUB_WORKSPACE}/release-assets/
 
           echo "QEMU image ready"
-          ls -lah release-assets/cheeky-qemu*
+          ls -lh cheeky-qemu-ubuntu-${VERSION}.qcow2*
+
+      - name: Create physical Pi img.xz image
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          cd /tmp/cheeky-build
+
+          echo "Converting to raw image for physical Pi..."
+          # Just use the resized image as-is, compress with xz
+          xz -9v ubuntu-24.04-arm64.img
+
+          # Move to release assets
+          cp ubuntu-24.04-arm64.img.xz ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-${VERSION}.img.xz
+          sha256sum ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-${VERSION}.img.xz > ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-${VERSION}.img.xz.sha256
+
+          echo "Pi image ready"
+          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-${VERSION}.img.xz*
 
       - name: Create QEMU launcher bundles
         run: |
@@ -237,23 +189,37 @@ jobs:
           body: |
             ## Cheeky ${{ github.ref_name }}
 
-            Download, flash, boot - that's it!
+            Ubuntu-based internet radio for Raspberry Pi. Download, flash, boot - that's it!
 
             ### For Physical Raspberry Pi
 
-            | Pi Model | Download |
-            |----------|----------|
-            | Pi Zero 2 W, Pi 3, Pi 4, Pi 5 | cheeky-armv8-*.img.xz |
-            | Pi 2 | cheeky-armv7-*.img.xz |
-            | Pi Zero W, Pi 1 | cheeky-armv6-*.img.xz |
+            **Compatible with:** Pi Zero 2 W, Pi 3, Pi 4, Pi 5, Pi 2, Pi Zero W, Pi 1
+
+            Download: `cheeky-ubuntu-${{ github.ref_name }}.img.xz`
+
+            Flash with Raspberry Pi Imager, Balena Etcher, or `dd`:
+            ```bash
+            unxz cheeky-ubuntu-v1.0.0.img.xz
+            sudo dd if=cheeky-ubuntu-v1.0.0.img of=/dev/sdX bs=4M status=progress
+            ```
 
             ### Test in QEMU (No Pi Needed)
 
+            **Choose your platform:**
+
             | Platform | Download |
             |----------|----------|
-            | Linux | cheeky-qemu-linux-*.tar.gz |
-            | macOS | cheeky-qemu-macos-*.tar.gz |
-            | Windows | cheeky-qemu-windows-*.zip |
+            | Linux | `cheeky-qemu-linux-*.tar.gz` |
+            | macOS | `cheeky-qemu-macos-*.tar.gz` |
+            | Windows | `cheeky-qemu-windows-*.zip` |
+
+            **Quick start:**
+            ```bash
+            tar xzf cheeky-qemu-linux-v1.0.0.tar.gz
+            cd linux
+            ./start-qemu.sh
+            # Access: http://localhost:6680 (radio) http://localhost:8080 (Bluetooth)
+            ```
           files: release-assets/*
           draft: false
           prerelease: false
