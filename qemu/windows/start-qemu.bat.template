@@ -1,22 +1,19 @@
 @echo off
 REM Cheeky QEMU Launcher for Windows
-REM Downloads and runs the Cheeky image in QEMU
+REM Downloads and runs Ubuntu QEMU image with Cheeky pre-installed
 REM
 REM Usage:
 REM   start-qemu.bat [QEMU_DIR]
 REM
 REM Arguments:
 REM   QEMU_DIR - Directory containing QEMU files (default: script directory)
-REM
-REM The working directory is always the current directory where the script is run from.
 
 setlocal enabledelayedexpansion
 
 set VERSION=VERSION_PLACEHOLDER
 set REPO=REPO_PLACEHOLDER
-set IMAGE_FILE=cheeky-armv8-!VERSION!.img
-set IMAGE_XZ=!IMAGE_FILE!.xz
-set IMAGE_URL=https://github.com/!REPO!/releases/download/!VERSION!/!IMAGE_XZ!
+set IMAGE_FILE=cheeky-qemu-ubuntu-!VERSION!.qcow2
+set IMAGE_URL=https://github.com/!REPO!/releases/download/!VERSION!/!IMAGE_FILE!
 
 REM Set directories
 set SCRIPT_DIR=%~dp0
@@ -24,7 +21,7 @@ set WORK_DIR=%cd%
 
 REM Set QEMU directory from parameter or default to script directory
 if "%~1"=="" (
-    set QEMU_DIR=!SCRIPT_DIR:~0,-1!
+    set QEMU_DIR=%~dp0
 ) else (
     set QEMU_DIR=%~1
 )
@@ -50,76 +47,50 @@ if not exist "!QEMU_EXE!" (
     exit /b 1
 )
 
-REM Download image if needed
+REM Download image if needed (qcow2 format)
 if not exist "!IMAGE_FILE!" (
-    if not exist "!IMAGE_XZ!" (
-        echo Downloading Cheeky image approximately 180MB...
-        echo From: !IMAGE_URL!
+    echo Downloading Cheeky QEMU image approximately 1.5GB...
+    echo From: !IMAGE_URL!
 
-        REM Try download with authentication if GITHUB_TOKEN is set
-        if defined GITHUB_TOKEN (
-            echo Using GitHub authentication...
-            powershell -Command "$headers = @{'Authorization'='Bearer !GITHUB_TOKEN!'}; Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_XZ!' -Headers $headers -UseBasicParsing"
-        ) else (
-            echo Downloading without authentication. Set GITHUB_TOKEN env var if repository is private.
-            powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_XZ!' -UseBasicParsing"
-        )
+    REM Use BitsTransfer for faster downloads
+    echo Downloading using Windows BitsTransfer (optimized for large files)...
+    powershell -Command "Import-Module BitsTransfer; Start-BitsTransfer -Source '!IMAGE_URL!' -Destination '!IMAGE_FILE!' -Asynchronous; Get-BitsTransfer | Resume-BitsTransfer"
 
-        if !errorlevel! neq 0 (
-            echo Download failed
-            if not defined GITHUB_TOKEN (
-                echo.
-                echo If repository is private, set GITHUB_TOKEN environment variable:
-                echo   set GITHUB_TOKEN=your_personal_access_token
-                echo   start-qemu.bat "C:\path\to\qemu"
-            )
-            pause
-            exit /b 1
-        )
+    if !errorlevel! neq 0 (
+        echo BitsTransfer failed, trying Invoke-WebRequest as fallback...
+        powershell -Command "Invoke-WebRequest -Uri '!IMAGE_URL!' -OutFile '!IMAGE_FILE!' -UseBasicParsing"
     )
 
-    echo Extracting image...
-    7z x "!IMAGE_XZ!" 2>nul
     if !errorlevel! neq 0 (
-        echo Extraction failed
-        echo.
-        echo 7-Zip is required but not found on this system.
-        echo.
-        echo Install 7-Zip:
-        echo   Option 1: Download from https://www.7-zip.org/download.html
-        echo   Option 2: winget install 7zip
-        echo   Option 3: choco install 7zip
-        echo.
+        echo Download failed
+        if not defined GITHUB_TOKEN (
+            echo.
+            echo If repository is private, set GITHUB_TOKEN environment variable:
+            echo   set GITHUB_TOKEN=your_personal_access_token
+            echo   start-qemu.bat "C:\path\to\qemu"
+        )
         pause
         exit /b 1
     )
 )
 
-REM Resize image if needed
-if not exist "!IMAGE_FILE!.resized" (
-    echo Resizing image...
-    "!QEMU_DIR!\qemu-img.exe" resize "!IMAGE_FILE!" +2G
-    type nul > "!IMAGE_FILE!.resized"
-)
-
 echo.
 echo Starting QEMU...
-echo This may take 30-60 seconds to boot
+echo This may take 1-2 minutes to boot (Ubuntu first-time setup)
 echo.
 echo Once booted, open in your browser:
 echo   Radio: http://localhost:6680
 echo   Bluetooth Manager: http://localhost:8080
-echo   SSH: ssh -p 2222 root@localhost password: raspberry
+echo   SSH: ssh -p 2222 ubuntu@localhost (password: ubuntu)
 echo.
 
-REM Run QEMU with port forwarding
-REM Note: Boot from image directly - no separate kernel needed
+REM Run QEMU with qcow2 image
 "!QEMU_DIR!\qemu-system-aarch64.exe" ^
     -nographic ^
     -machine virt ^
     -cpu cortex-a72 ^
     -m 2048 ^
-    -drive file="!IMAGE_FILE!",if=none,format=raw,id=hd ^
+    -drive file="!IMAGE_FILE!",if=none,format=qcow2,id=hd ^
     -device virtio-blk-device,drive=hd ^
     -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22 ^
     -device virtio-net-device,netdev=net0 ^
