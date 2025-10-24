@@ -32,22 +32,25 @@ jobs:
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download Ubuntu Minimal cloud image
+      - name: Download Raspberry Pi OS Lite ARM64 image
         run: |
           mkdir -p release-assets
           mkdir -p /tmp/cheeky-build
           cd /tmp/cheeky-build
 
-          echo "Downloading Ubuntu 24.04 Minimal ARM64 cloud image..."
+          echo "Downloading Raspberry Pi OS Lite ARM64 image..."
           wget -q --show-progress \
-            "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-arm64.img" \
-            -O cheeky-base-arm64.img || {
-            echo "ERROR: Failed to download Ubuntu minimal image"
+            "https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2024-11-19/2024-11-19-raspios-bookworm-arm64-lite.img.xz" \
+            -O raspios-lite-arm64.img.xz || {
+            echo "ERROR: Failed to download Raspberry Pi OS image"
             exit 1
           }
 
-          echo "Image downloaded successfully"
-          ls -lh cheeky-base-arm64.img
+          echo "Extracting image..."
+          xz -d raspios-lite-arm64.img.xz
+
+          echo "Image ready"
+          ls -lh raspios-lite-arm64.img
 
       - name: Customize image for Cheeky
         run: |
@@ -58,10 +61,10 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq qemu-utils > /dev/null 2>&1
 
-          IMAGE_FILE="cheeky-base-arm64.img"
+          IMAGE_FILE="raspios-lite-arm64.img"
           echo "Customizing image for Cheeky (using $IMAGE_FILE)..."
 
-          # Use qemu-nbd to mount cloud image (handles cloud images properly)
+          # Use qemu-nbd to mount Raspberry Pi OS image
           sudo modprobe nbd max_part=16
           sudo qemu-nbd --connect=/dev/nbd0 "$IMAGE_FILE"
           sleep 2
@@ -107,36 +110,36 @@ jobs:
           VERSION="${{ steps.version.outputs.VERSION }}"
           cd /tmp/cheeky-build
 
-          IMAGE_FILE="cheeky-base-arm64.img"
+          IMAGE_FILE="raspios-lite-arm64.img"
           echo "Converting raw to compressed qcow2 for QEMU..."
-          qemu-img convert -c -O qcow2 "$IMAGE_FILE" cheeky-qemu-ubuntu-minimal-${VERSION}.qcow2
+          qemu-img convert -c -O qcow2 "$IMAGE_FILE" cheeky-qemu-raspios-${VERSION}.qcow2
 
           echo "Compressed image size:"
-          ls -lh cheeky-qemu-ubuntu-minimal-${VERSION}.qcow2
+          ls -lh cheeky-qemu-raspios-${VERSION}.qcow2
 
-          sha256sum cheeky-qemu-ubuntu-minimal-${VERSION}.qcow2 > cheeky-qemu-ubuntu-minimal-${VERSION}.qcow2.sha256
+          sha256sum cheeky-qemu-raspios-${VERSION}.qcow2 > cheeky-qemu-raspios-${VERSION}.qcow2.sha256
 
           # Move to release assets
-          cp cheeky-qemu-ubuntu-minimal-${VERSION}.qcow2* ${GITHUB_WORKSPACE}/release-assets/
+          cp cheeky-qemu-raspios-${VERSION}.qcow2* ${GITHUB_WORKSPACE}/release-assets/
 
           echo "QEMU image ready"
-          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-qemu-ubuntu-minimal-${VERSION}.qcow2*
+          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-qemu-raspios-${VERSION}.qcow2*
 
       - name: Create physical Pi img.xz image
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           cd /tmp/cheeky-build
 
-          IMAGE_FILE="cheeky-base-arm64.img"
+          IMAGE_FILE="raspios-lite-arm64.img"
           echo "Compressing image for Pi..."
           xz -9v "$IMAGE_FILE"
 
           # Move to release assets
-          cp "${IMAGE_FILE}.xz" ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-minimal-${VERSION}.img.xz
-          sha256sum ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-minimal-${VERSION}.img.xz > ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-minimal-${VERSION}.img.xz.sha256
+          cp "${IMAGE_FILE}.xz" ${GITHUB_WORKSPACE}/release-assets/cheeky-raspios-${VERSION}.img.xz
+          sha256sum ${GITHUB_WORKSPACE}/release-assets/cheeky-raspios-${VERSION}.img.xz > ${GITHUB_WORKSPACE}/release-assets/cheeky-raspios-${VERSION}.img.xz.sha256
 
           echo "Pi image ready"
-          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-ubuntu-minimal-${VERSION}.img.xz*
+          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-raspios-${VERSION}.img.xz*
 
       - name: Create QEMU launcher bundles
         run: |
@@ -167,17 +170,17 @@ jobs:
             echo "CHEEKY QEMU BUNDLE" > "$dir/README.txt"
             echo "==================" >> "$dir/README.txt"
             echo "" >> "$dir/README.txt"
-            echo "This bundle runs Cheeky in QEMU using Ubuntu Minimal 24.04." >> "$dir/README.txt"
+            echo "This bundle runs Cheeky in QEMU using Raspberry Pi OS Lite." >> "$dir/README.txt"
             echo "" >> "$dir/README.txt"
             echo "Usage:" >> "$dir/README.txt"
-            echo "1. Download cheeky-qemu-ubuntu-minimal-*.qcow2 from releases" >> "$dir/README.txt"
+            echo "1. Download cheeky-qemu-raspios-*.qcow2 from releases" >> "$dir/README.txt"
             echo "2. Place it in this directory" >> "$dir/README.txt"
             echo "3. Run launcher: ./start-qemu.sh or start-qemu.bat" >> "$dir/README.txt"
             echo "" >> "$dir/README.txt"
             echo "Access after boot (~1-2 minutes):" >> "$dir/README.txt"
             echo "- Radio: http://localhost:6680" >> "$dir/README.txt"
             echo "- Bluetooth: http://localhost:8080" >> "$dir/README.txt"
-            echo "- SSH: ssh -p 2222 root@localhost (no password)" >> "$dir/README.txt"
+            echo "- SSH: ssh -p 2222 pi@localhost (password: raspberry)" >> "$dir/README.txt"
           done
 
           # Package bundles
@@ -203,19 +206,22 @@ jobs:
           body: |
             ## Cheeky ${{ github.ref_name }}
 
-            Lightweight Ubuntu Minimal-based internet radio for Raspberry Pi. Download, flash, boot - that's it!
+            Lightweight Raspberry Pi OS-based internet radio system. Download, flash, boot - that's it!
 
             ### For Physical Raspberry Pi
 
             **Compatible with:** All Raspberry Pi models (Pi Zero 2 W, 3, 4, 5, 2, Zero W, 1)
 
-            Download: `cheeky-ubuntu-minimal-${{ github.ref_name }}.img.xz`
+            Download: `cheeky-raspios-${{ github.ref_name }}.img.xz`
 
             Flash with Raspberry Pi Imager, Balena Etcher, or `dd`:
             ```bash
-            unxz cheeky-ubuntu-minimal-v1.0.0.img.xz
-            sudo dd if=cheeky-ubuntu-minimal-v1.0.0.img of=/dev/sdX bs=4M status=progress
+            unxz cheeky-raspios-v1.0.0.img.xz
+            sudo dd if=cheeky-raspios-v1.0.0.img of=/dev/sdX bs=4M status=progress
+            sync
             ```
+
+            Default credentials: `pi` / `raspberry`
 
             ### Test in QEMU (No Pi Needed)
 
@@ -232,8 +238,9 @@ jobs:
             tar xzf cheeky-qemu-linux-v1.0.0.tar.gz
             cd linux
             ./start-qemu.sh
-            # First run downloads ~1GB image, subsequent runs start immediately
+            # First run downloads ~2GB image, subsequent runs start immediately
             # Access: http://localhost:6680 (radio) http://localhost:8080 (Bluetooth)
+            # SSH: ssh -p 2222 pi@localhost (password: raspberry)
             ```
           files: release-assets/*
           draft: false
