@@ -75,17 +75,19 @@ echo "  Bluetooth Manager: http://localhost:8080"
 echo "  SSH: ssh -p 2222 debian@localhost"
 echo ""
 
-# Run QEMU with qcow2 image and port forwarding
+# Run QEMU with direct kernel boot (bypasses UEFI firmware requirement)
 qemu-system-aarch64 \
     -nographic \
     -machine virt \
     -cpu cortex-a72 \
     -m 2048 \
+    -kernel "$QEMU_DIR/vmlinuz" \
+    -initrd "$QEMU_DIR/initrd.img" \
+    -append "root=/dev/vda1 console=ttyAMA0 rw" \
     -drive "file=$IMAGE_FILE,if=none,format=qcow2,id=hd" \
     -device virtio-blk-device,drive=hd \
     -netdev "user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22" \
-    -device virtio-net-device,netdev=net0 \
-    -serial telnet:localhost:4555,server,nowait
+    -device virtio-net-device,netdev=net0
 
 echo ""
 echo "=========================================="

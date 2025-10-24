@@ -102,6 +102,30 @@ jobs:
           echo "Image customization complete"
           ls -lh "$IMAGE_FILE"
 
+      - name: Extract kernel and initrd for QEMU direct boot
+        run: |
+          cd /tmp/cheeky-build
+
+          echo "Extracting kernel and initrd from Debian cloud image..."
+
+          # Re-mount image to extract kernel/initrd
+          sudo qemu-nbd -f qcow2 --connect=/dev/nbd0 debian-12-arm64.qcow2
+          sleep 2
+          sudo mount /dev/nbd0p1 /mnt/cheeky-img
+
+          # Copy kernel and initrd
+          sudo cp /mnt/cheeky-img/boot/vmlinuz-* vmlinuz
+          sudo cp /mnt/cheeky-img/boot/initrd.img-* initrd.img
+          sudo chown $(whoami):$(whoami) vmlinuz initrd.img
+
+          echo "Extracted files:"
+          ls -lh vmlinuz initrd.img
+
+          # Cleanup
+          sudo umount /mnt/cheeky-img
+          sudo qemu-nbd --disconnect /dev/nbd0
+          sudo rmdir /mnt/cheeky-img 2>/dev/null || true
+
       - name: Create QEMU qcow2 image
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
@@ -145,6 +169,17 @@ jobs:
           VERSION="${{ steps.version.outputs.VERSION }}"
           REPO="${{ github.repository }}"
           mkdir -p qemu-build/{linux,macos,windows}
+
+          # Copy kernel and initrd to build directory
+          cd /tmp/cheeky-build
+          cp vmlinuz ${GITHUB_WORKSPACE}/qemu-build/linux/
+          cp initrd.img ${GITHUB_WORKSPACE}/qemu-build/linux/
+          cp vmlinuz ${GITHUB_WORKSPACE}/qemu-build/macos/
+          cp initrd.img ${GITHUB_WORKSPACE}/qemu-build/macos/
+          cp vmlinuz ${GITHUB_WORKSPACE}/qemu-build/windows/
+          cp initrd.img ${GITHUB_WORKSPACE}/qemu-build/windows/
+
+          cd ${GITHUB_WORKSPACE}
 
           # Copy and process QEMU scripts
           for dir in linux macos windows; do

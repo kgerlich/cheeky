@@ -16,8 +16,16 @@ if not exist "!IMAGE_FILE!" (
 )
 echo Starting QEMU...
 set QEMU_EXE=qemu-system-aarch64.exe
+set SCRIPT_DIR=%~dp0
 if not "%~1"=="" (
     set QEMU_EXE=%~1\qemu-system-aarch64.exe
 )
-"!QEMU_EXE!" -machine virt -cpu cortex-a72 -m 2048 -drive file="!IMAGE_FILE!",if=none,format=qcow2,id=hd -device virtio-blk-device,drive=hd -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22 -device virtio-net-device,netdev=net0 -serial mon:stdio -monitor none -d guest_errors,int,cpu_reset
+echo.
+echo QEMU will boot Debian with direct kernel loading...
+echo Once booted, open in your browser:
+echo   Radio: http://localhost:6680
+echo   Bluetooth Manager: http://localhost:8080
+echo   SSH: ssh -p 2222 debian@localhost
+echo.
+"!QEMU_EXE!" -nographic -machine virt -cpu cortex-a72 -m 2048 -kernel "!SCRIPT_DIR!vmlinuz" -initrd "!SCRIPT_DIR!initrd.img" -append "root=/dev/vda1 console=ttyAMA0 rw" -drive file="!IMAGE_FILE!",if=none,format=qcow2,id=hd -device virtio-blk-device,drive=hd -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22 -device virtio-net-device,netdev=net0
 pause
