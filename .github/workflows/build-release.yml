@@ -93,6 +93,9 @@ jobs:
             sudo cp /usr/bin/qemu-aarch64-static /mnt/cheeky-img/usr/bin/
 
             # Configure DNS for package installation (use Google DNS for reliability)
+            # Remove symlink to systemd-resolved (won't work in chroot)
+            sudo rm -f /mnt/cheeky-img/etc/resolv.conf
+            # Create real resolv.conf file
             echo "nameserver 8.8.8.8" | sudo tee /mnt/cheeky-img/etc/resolv.conf > /dev/null
             echo "nameserver 8.8.4.4" | sudo tee -a /mnt/cheeky-img/etc/resolv.conf > /dev/null
 
