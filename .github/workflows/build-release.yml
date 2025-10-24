@@ -56,20 +56,31 @@ jobs:
 
           # Install image manipulation tools
           sudo apt-get update -qq
-          sudo apt-get install -y -qq qemu-utils > /dev/null 2>&1
+          sudo apt-get install -y -qq qemu-utils kpartx > /dev/null 2>&1
 
           echo "Customizing Ubuntu image for Cheeky..."
 
           # Resize image to 10GB
           qemu-img resize ubuntu-24.04-arm64.img 10G
 
-          # Mount and customize
+          # Mount using kpartx (handles partitions automatically)
           LOOP_DEV=$(sudo losetup -f)
           sudo losetup "$LOOP_DEV" ubuntu-24.04-arm64.img
-          sudo partprobe "$LOOP_DEV"
+          sudo kpartx -av "$LOOP_DEV"
 
+          # Get the partition name from kpartx
+          PART_NAME=$(basename $(sudo kpartx -l "$LOOP_DEV" 2>/dev/null | grep -oP '/dev/mapper/\S+' | head -1))
+
+          if [ -z "$PART_NAME" ]; then
+            echo "ERROR: Could not identify partition from kpartx"
+            sudo kpartx -dv "$LOOP_DEV"
+            sudo losetup -d "$LOOP_DEV"
+            exit 1
+          fi
+
+          echo "Mounting partition: /dev/mapper/$PART_NAME"
           sudo mkdir -p /mnt/cheeky-ubuntu
-          sudo mount "${LOOP_DEV}p1" /mnt/cheeky-ubuntu
+          sudo mount "/dev/mapper/$PART_NAME" /mnt/cheeky-ubuntu
 
           if mountpoint -q /mnt/cheeky-ubuntu; then
             echo "Installing Cheeky components..."
@@ -84,9 +95,13 @@ jobs:
             sudo umount /mnt/cheeky-ubuntu
           else
             echo "ERROR: Could not mount filesystem"
+            sudo kpartx -dv "$LOOP_DEV"
+            sudo losetup -d "$LOOP_DEV"
             exit 1
           fi
 
+          # Cleanup
+          sudo kpartx -dv "$LOOP_DEV"
           sudo losetup -d "$LOOP_DEV"
           sudo rmdir /mnt/cheeky-ubuntu 2>/dev/null || true
 
