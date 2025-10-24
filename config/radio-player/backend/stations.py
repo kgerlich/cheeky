@@ -16,6 +16,7 @@ class StationsClient:
         self.session: Optional[aiohttp.ClientSession] = None
         self.cache = {}
         self.cache_ttl = 300  # 5 minutes
+        print(f"[Cheeky] Stations client initialized. API: {self.BASE_URL}")
 
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session"""
@@ -61,9 +62,12 @@ class StationsClient:
                 "hidebroken": "true"
             }
 
-            async with session.get(url, params=params) as resp:
+            print(f"[Cheeky] Searching for '{query}' from {url}")
+            async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                print(f"[Cheeky] Search API response status: {resp.status}")
                 if resp.status == 200:
                     stations = await resp.json()
+                    print(f"[Cheeky] Got {len(stations)} results for '{query}'")
                     result = {
                         "stations": self._normalize_stations(stations),
                         "total": len(stations)
@@ -71,10 +75,14 @@ class StationsClient:
                     await self._cache_set(cache_key, result)
                     return result
                 else:
+                    text = await resp.text()
+                    print(f"[Cheeky] Search API error {resp.status}: {text[:200]}")
                     raise Exception(f"API returned {resp.status}")
 
         except Exception as e:
-            print(f"[Cheeky] Search error: {e}")
+            print(f"[Cheeky] Search error: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
             return {"stations": [], "total": 0}
 
     async def browse(
@@ -145,9 +153,12 @@ class StationsClient:
                 "hidebroken": "true"
             }
 
-            async with session.get(url, params=params) as resp:
+            print(f"[Cheeky] Fetching popular stations from {url}")
+            async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                print(f"[Cheeky] API response status: {resp.status}")
                 if resp.status == 200:
                     stations = await resp.json()
+                    print(f"[Cheeky] Got {len(stations)} popular stations")
                     result = {
                         "stations": self._normalize_stations(stations),
                         "total": len(stations)
@@ -155,10 +166,14 @@ class StationsClient:
                     await self._cache_set(cache_key, result)
                     return result
                 else:
+                    text = await resp.text()
+                    print(f"[Cheeky] API error {resp.status}: {text[:200]}")
                     raise Exception(f"API returned {resp.status}")
 
         except Exception as e:
-            print(f"[Cheeky] Popular stations error: {e}")
+            print(f"[Cheeky] Popular stations error: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
             return {"stations": [], "total": 0}
 
     async def get_station(self, uuid: str) -> Optional[Dict]:
