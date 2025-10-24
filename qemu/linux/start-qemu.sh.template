@@ -15,7 +15,7 @@ set -e
 
 VERSION="VERSION_PLACEHOLDER"
 REPO="REPO_PLACEHOLDER"
-IMAGE_FILE="cheeky-qemu-raspios-${VERSION}.qcow2"
+IMAGE_FILE="cheeky-qemu-debian-${VERSION}.qcow2"
 IMAGE_URL="https://github.com/${REPO}/releases/download/${VERSION}/${IMAGE_FILE}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -72,14 +72,15 @@ echo ""
 echo "Once booted, open in your browser:"
 echo "  Radio: http://localhost:6680"
 echo "  Bluetooth Manager: http://localhost:8080"
-echo "  SSH: ssh -p 2222 pi@localhost (password: raspberry)"
+echo "  SSH: ssh -p 2222 debian@localhost"
 echo ""
 
-# Run QEMU with qcow2 image and port forwarding using Raspberry Pi 3B emulation
+# Run QEMU with qcow2 image and port forwarding
 qemu-system-aarch64 \
     -nographic \
-    -machine raspi3b \
-    -m 1024 \
+    -machine virt \
+    -cpu cortex-a72 \
+    -m 2048 \
     -drive "file=$IMAGE_FILE,if=none,format=qcow2,id=hd" \
     -device virtio-blk-device,drive=hd \
     -netdev "user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22" \

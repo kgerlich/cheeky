@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 set VERSION=VERSION_PLACEHOLDER
 set REPO=REPO_PLACEHOLDER
-set IMAGE_FILE=cheeky-qemu-raspios-!VERSION!.qcow2
+set IMAGE_FILE=cheeky-qemu-debian-!VERSION!.qcow2
 set IMAGE_URL=https://github.com/!REPO!/releases/download/!VERSION!/!IMAGE_FILE!
 echo Cheeky QEMU Launcher
 if not exist "!IMAGE_FILE!" (
@@ -19,5 +19,5 @@ set QEMU_EXE=qemu-system-aarch64.exe
 if not "%~1"=="" (
     set QEMU_EXE=%~1\qemu-system-aarch64.exe
 )
-"!QEMU_EXE!" -machine raspi3b -m 1024 -drive file="!IMAGE_FILE!",if=none,format=qcow2,id=hd -device virtio-blk-device,drive=hd -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22 -device virtio-net-device,netdev=net0 -serial mon:stdio -monitor none -d guest_errors,int,cpu_reset
+"!QEMU_EXE!" -machine virt -cpu cortex-a72 -m 2048 -drive file="!IMAGE_FILE!",if=none,format=qcow2,id=hd -device virtio-blk-device,drive=hd -netdev user,id=net0,hostfwd=tcp::6680-:6680,hostfwd=tcp::8080-:8080,hostfwd=tcp::2222-:22 -device virtio-net-device,netdev=net0 -serial mon:stdio -monitor none -d guest_errors,int,cpu_reset
 pause

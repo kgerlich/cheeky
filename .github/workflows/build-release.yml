@@ -32,25 +32,22 @@ jobs:
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download Raspberry Pi OS Lite ARM64 image
+      - name: Download Debian ARM64 cloud image
         run: |
           mkdir -p release-assets
           mkdir -p /tmp/cheeky-build
           cd /tmp/cheeky-build
 
-          echo "Downloading Raspberry Pi OS Lite ARM64 image..."
+          echo "Downloading Debian 12 Bookworm ARM64 cloud image..."
           wget -q --show-progress \
-            "https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2024-11-19/2024-11-19-raspios-bookworm-arm64-lite.img.xz" \
-            -O raspios-lite-arm64.img.xz || {
-            echo "ERROR: Failed to download Raspberry Pi OS image"
+            "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-arm64.qcow2" \
+            -O debian-12-arm64.qcow2 || {
+            echo "ERROR: Failed to download Debian cloud image"
             exit 1
           }
 
-          echo "Extracting image..."
-          xz -d raspios-lite-arm64.img.xz
-
-          echo "Image ready"
-          ls -lh raspios-lite-arm64.img
+          echo "Image downloaded"
+          ls -lh debian-12-arm64.qcow2
 
       - name: Customize image for Cheeky
         run: |
@@ -61,12 +58,12 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq qemu-utils > /dev/null 2>&1
 
-          IMAGE_FILE="raspios-lite-arm64.img"
-          echo "Customizing image for Cheeky (using $IMAGE_FILE)..."
+          IMAGE_FILE="debian-12-arm64.qcow2"
+          echo "Customizing Debian cloud image for Cheeky..."
 
-          # Use qemu-nbd to mount Raspberry Pi OS image
+          # Use qemu-nbd to mount Debian cloud image
           sudo modprobe nbd max_part=16
-          sudo qemu-nbd -f raw --connect=/dev/nbd0 "$IMAGE_FILE"
+          sudo qemu-nbd -f qcow2 --connect=/dev/nbd0 "$IMAGE_FILE"
           sleep 2
 
           # Find partition (usually p1 on cloud images)
@@ -110,36 +107,38 @@ jobs:
           VERSION="${{ steps.version.outputs.VERSION }}"
           cd /tmp/cheeky-build
 
-          IMAGE_FILE="raspios-lite-arm64.img"
-          echo "Converting raw to compressed qcow2 for QEMU..."
-          qemu-img convert -c -O qcow2 "$IMAGE_FILE" cheeky-qemu-raspios-${VERSION}.qcow2
+          IMAGE_FILE="debian-12-arm64.qcow2"
+          echo "Compressing Debian cloud image for QEMU..."
+          qemu-img convert -c -O qcow2 "$IMAGE_FILE" cheeky-qemu-debian-${VERSION}.qcow2
 
           echo "Compressed image size:"
-          ls -lh cheeky-qemu-raspios-${VERSION}.qcow2
+          ls -lh cheeky-qemu-debian-${VERSION}.qcow2
 
-          sha256sum cheeky-qemu-raspios-${VERSION}.qcow2 > cheeky-qemu-raspios-${VERSION}.qcow2.sha256
+          sha256sum cheeky-qemu-debian-${VERSION}.qcow2 > cheeky-qemu-debian-${VERSION}.qcow2.sha256
 
           # Move to release assets
-          cp cheeky-qemu-raspios-${VERSION}.qcow2* ${GITHUB_WORKSPACE}/release-assets/
+          cp cheeky-qemu-debian-${VERSION}.qcow2* ${GITHUB_WORKSPACE}/release-assets/
 
           echo "QEMU image ready"
-          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-qemu-raspios-${VERSION}.qcow2*
+          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-qemu-debian-${VERSION}.qcow2*
 
       - name: Create physical Pi img.xz image
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           cd /tmp/cheeky-build
 
-          IMAGE_FILE="raspios-lite-arm64.img"
+          echo "Converting qcow2 to raw image for physical Pi..."
+          qemu-img convert -O raw debian-12-arm64.qcow2 cheeky-debian-${VERSION}.img
+
           echo "Compressing image for Pi..."
-          xz -9v "$IMAGE_FILE"
+          xz -9v cheeky-debian-${VERSION}.img
 
           # Move to release assets
-          cp "${IMAGE_FILE}.xz" ${GITHUB_WORKSPACE}/release-assets/cheeky-raspios-${VERSION}.img.xz
-          sha256sum ${GITHUB_WORKSPACE}/release-assets/cheeky-raspios-${VERSION}.img.xz > ${GITHUB_WORKSPACE}/release-assets/cheeky-raspios-${VERSION}.img.xz.sha256
+          cp cheeky-debian-${VERSION}.img.xz ${GITHUB_WORKSPACE}/release-assets/
+          sha256sum ${GITHUB_WORKSPACE}/release-assets/cheeky-debian-${VERSION}.img.xz > ${GITHUB_WORKSPACE}/release-assets/cheeky-debian-${VERSION}.img.xz.sha256
 
           echo "Pi image ready"
-          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-raspios-${VERSION}.img.xz*
+          ls -lh ${GITHUB_WORKSPACE}/release-assets/cheeky-debian-${VERSION}.img.xz*
 
       - name: Create QEMU launcher bundles
         run: |
@@ -170,17 +169,17 @@ jobs:
             echo "CHEEKY QEMU BUNDLE" > "$dir/README.txt"
             echo "==================" >> "$dir/README.txt"
             echo "" >> "$dir/README.txt"
-            echo "This bundle runs Cheeky in QEMU using Raspberry Pi OS Lite." >> "$dir/README.txt"
+            echo "This bundle runs Cheeky in QEMU using Debian 12 Bookworm." >> "$dir/README.txt"
             echo "" >> "$dir/README.txt"
             echo "Usage:" >> "$dir/README.txt"
-            echo "1. Download cheeky-qemu-raspios-*.qcow2 from releases" >> "$dir/README.txt"
+            echo "1. Download cheeky-qemu-debian-*.qcow2 from releases" >> "$dir/README.txt"
             echo "2. Place it in this directory" >> "$dir/README.txt"
             echo "3. Run launcher: ./start-qemu.sh or start-qemu.bat" >> "$dir/README.txt"
             echo "" >> "$dir/README.txt"
             echo "Access after boot (~1-2 minutes):" >> "$dir/README.txt"
             echo "- Radio: http://localhost:6680" >> "$dir/README.txt"
             echo "- Bluetooth: http://localhost:8080" >> "$dir/README.txt"
-            echo "- SSH: ssh -p 2222 pi@localhost (password: raspberry)" >> "$dir/README.txt"
+            echo "- SSH: ssh -p 2222 debian@localhost (password set on first boot)" >> "$dir/README.txt"
           done
 
           # Package bundles
@@ -206,22 +205,22 @@ jobs:
           body: |
             ## Cheeky ${{ github.ref_name }}
 
-            Lightweight Raspberry Pi OS-based internet radio system. Download, flash, boot - that's it!
+            Lightweight Debian-based internet radio system. Download, flash, boot - that's it!
 
             ### For Physical Raspberry Pi
 
-            **Compatible with:** All Raspberry Pi models (Pi Zero 2 W, 3, 4, 5, 2, Zero W, 1)
+            **Compatible with:** All Raspberry Pi ARM64 models (Pi Zero 2 W, 3, 4, 5)
 
-            Download: `cheeky-raspios-${{ github.ref_name }}.img.xz`
+            Download: `cheeky-debian-${{ github.ref_name }}.img.xz`
 
             Flash with Raspberry Pi Imager, Balena Etcher, or `dd`:
             ```bash
-            unxz cheeky-raspios-v1.0.0.img.xz
-            sudo dd if=cheeky-raspios-v1.0.0.img of=/dev/sdX bs=4M status=progress
+            unxz cheeky-debian-v1.0.0.img.xz
+            sudo dd if=cheeky-debian-v1.0.0.img of=/dev/sdX bs=4M status=progress
             sync
             ```
 
-            Default credentials: `pi` / `raspberry`
+            Default user: `debian` (password configured on first boot via cloud-init)
 
             ### Test in QEMU (No Pi Needed)
 
@@ -238,9 +237,9 @@ jobs:
             tar xzf cheeky-qemu-linux-v1.0.0.tar.gz
             cd linux
             ./start-qemu.sh
-            # First run downloads ~2GB image, subsequent runs start immediately
+            # First run downloads ~800MB image, subsequent runs start immediately
             # Access: http://localhost:6680 (radio) http://localhost:8080 (Bluetooth)
-            # SSH: ssh -p 2222 pi@localhost (password: raspberry)
+            # SSH: ssh -p 2222 debian@localhost
             ```
           files: release-assets/*
           draft: false
