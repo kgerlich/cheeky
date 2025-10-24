@@ -96,6 +96,13 @@ jobs:
             echo "nameserver 8.8.8.8" | sudo tee /mnt/cheeky-img/etc/resolv.conf > /dev/null
             echo "nameserver 8.8.4.4" | sudo tee -a /mnt/cheeky-img/etc/resolv.conf > /dev/null
 
+            # Replace mirror-based sources.list with direct Debian repositories
+            sudo tee /mnt/cheeky-img/etc/apt/sources.list > /dev/null <<'EOF'
+            deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+            deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+            deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+            EOF
+
             # Copy Cheeky configuration files and installation script
             sudo mkdir -p /mnt/cheeky-img/root/cheeky
             sudo cp -r ${GITHUB_WORKSPACE}/config /mnt/cheeky-img/root/cheeky/
