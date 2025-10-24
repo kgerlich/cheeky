@@ -76,7 +76,14 @@ jobs:
 
           # Use qemu-nbd to mount cloud image (handles cloud images properly)
           sudo modprobe nbd max_part=16
-          sudo qemu-nbd --connect=/dev/nbd0 "$IMAGE_FILE"
+
+          if [ -f "debian-bookworm-arm64.qcow2" ]; then
+            # Tell qemu-nbd this is a qcow2 file
+            sudo qemu-nbd --format=qcow2 --connect=/dev/nbd0 "$IMAGE_FILE"
+          else
+            # Raw image
+            sudo qemu-nbd --connect=/dev/nbd0 "$IMAGE_FILE"
+          fi
           sleep 2
 
           # Find partition (usually p1 on cloud images)
