@@ -19,73 +19,70 @@ echo "[Cheeky] Installing core dependencies..."
 apt-get install -y \
     python3-pip \
     python3-dev \
-    python3-glib \
     build-essential \
+    python3-dbus \
     pulseaudio \
     pulseaudio-utils \
     bluez \
-    bluez-tools \
-    alsa-utils \
+    mpv \
     avahi-daemon \
     wget \
     curl \
     git
 
-# Install Mopidy
-echo "[Cheeky] Installing Mopidy music server..."
-pip3 install --upgrade pip
-pip3 install mopidy mopidy-iris mopidy-tunein
+# Install Python packages
+echo "[Cheeky] Installing Python packages..."
+pip3 install --break-system-packages \
+    fastapi==0.104.1 \
+    uvicorn[standard]==0.24.0 \
+    aiohttp==3.9.0 \
+    pydantic==2.5.0 \
+    websockets==12.0 \
+    python-multipart==0.0.6 \
+    python-mpv==1.0.4
 
-# Install FastAPI for Bluetooth Manager
-echo "[Cheeky] Installing FastAPI for Bluetooth Manager..."
-pip3 install fastapi uvicorn python-multipart
+# Install Radio Player
+echo "[Cheeky] Installing Radio Player..."
+mkdir -p /opt/cheeky/radio-player
+cp -r config/radio-player/* /opt/cheeky/radio-player/
 
-# Create Mopidy configuration directory
-mkdir -p /etc/mopidy
-cp config/mopidy.conf /etc/mopidy/mopidy.conf
+# Create config directory
+mkdir -p /etc/cheeky
+cat > /etc/cheeky/settings.json << 'EOF'
+{
+  "volume": 75,
+  "last_station": null,
+  "bluetooth_device": ""
+}
+EOF
 
-# Create Mopidy system user and directories
-useradd -r -m -s /bin/false -d /var/lib/mopidy mopidy 2>/dev/null || true
-mkdir -p /var/lib/mopidy
-chown -R mopidy:mopidy /var/lib/mopidy
+cat > /etc/cheeky/favorites.json << 'EOF'
+{
+  "favorites": []
+}
+EOF
 
-# Create systemd service for Mopidy
-echo "[Cheeky] Creating Mopidy systemd service..."
-cat > /etc/systemd/system/mopidy.service << 'EOF'
+cat > /etc/cheeky/recent.json << 'EOF'
+{
+  "recent": []
+}
+EOF
+
+# Create systemd service for Radio Player
+echo "[Cheeky] Creating Radio Player systemd service..."
+cat > /etc/systemd/system/cheeky-radio-player.service << 'EOF'
 [Unit]
-Description=Mopidy Music Server
+Description=Cheeky Radio Player
 After=network.target sound.target pulseaudio.service
 
 [Service]
 Type=simple
-User=mopidy
-ExecStart=/usr/local/bin/mopidy --config /etc/mopidy/mopidy.conf
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Install Bluetooth Manager (FastAPI app)
-echo "[Cheeky] Installing Bluetooth Manager..."
-mkdir -p /opt/cheeky/bluetooth-web-manager
-cp -r config/bluetooth-web-manager/* /opt/cheeky/bluetooth-web-manager/
-
-# Create Bluetooth Manager systemd service
-echo "[Cheeky] Creating Bluetooth Manager systemd service..."
-cat > /etc/systemd/system/cheeky-bluetooth-manager.service << 'EOF'
-[Unit]
-Description=Cheeky Bluetooth Manager
-After=network.target bluetooth.service
-
-[Service]
-Type=simple
 User=root
-WorkingDirectory=/opt/cheeky/bluetooth-web-manager
-ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8080
+WorkingDirectory=/opt/cheeky/radio-player
+ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 80
 Restart=always
 RestartSec=10
+Environment="CHEEKY_CONFIG=/etc/cheeky"
 
 [Install]
 WantedBy=multi-user.target
@@ -110,34 +107,19 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
-# Enable BlueZ for background pairing
-echo "[Cheeky] Configuring BlueZ for automatic pairing..."
-mkdir -p /var/lib/bluetooth
-chmod 755 /var/lib/bluetooth
-
 # Enable and start services
 echo "[Cheeky] Enabling services..."
 systemctl daemon-reload
-systemctl enable mopidy
-systemctl enable cheeky-bluetooth-manager
+systemctl enable cheeky-radio-player
 systemctl enable cheeky-bluetooth-reconnect
 systemctl enable bluetooth
-systemctl enable pulseaudio
-
-# Configure PulseAudio
-echo "[Cheeky] Configuring PulseAudio..."
-mkdir -p /var/lib/mopidy/.config/pulse
-cat >> /var/lib/mopidy/.config/pulse/client.conf << 'EOF'
-autospawn = yes
-daemon-binary = /usr/bin/pulseaudio
-EOF
+systemctl enable avahi-daemon
 
 # Start services
 echo "[Cheeky] Starting services..."
-systemctl start pulseaudio
 systemctl start bluetooth
-systemctl start mopidy
-systemctl start cheeky-bluetooth-manager
+systemctl start avahi-daemon
+systemctl start cheeky-radio-player
 systemctl start cheeky-bluetooth-reconnect
 
 # Verify services are running
@@ -145,16 +127,10 @@ echo ""
 echo "[Cheeky] Verifying services..."
 sleep 2
 
-if systemctl is-active --quiet mopidy; then
-    echo "✓ Mopidy is running (port 6680)"
+if systemctl is-active --quiet cheeky-radio-player; then
+    echo "✓ Radio Player is running (port 80)"
 else
-    echo "✗ Mopidy failed to start"
-fi
-
-if systemctl is-active --quiet cheeky-bluetooth-manager; then
-    echo "✓ Bluetooth Manager is running (port 8080)"
-else
-    echo "✗ Bluetooth Manager failed to start"
+    echo "✗ Radio Player failed to start"
 fi
 
 if systemctl is-active --quiet bluetooth; then
@@ -168,11 +144,8 @@ echo "=========================================="
 echo "🍑 Cheeky Setup Complete!"
 echo "=========================================="
 echo ""
-echo "Access your radio:"
-echo "  http://raspberrypi.local:6680"
-echo ""
-echo "Manage Bluetooth speakers:"
-echo "  http://raspberrypi.local:8080"
+echo "Access your radio player and Bluetooth manager:"
+echo "  http://raspberrypi.local"
 echo ""
 echo "SSH access (if needed):"
 echo "  ssh root@raspberrypi.local"
