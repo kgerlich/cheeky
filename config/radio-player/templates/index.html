@@ -12,12 +12,12 @@
             theme: {
                 extend: {
                     colors: {
-                        'cheeky-dark': '#0f0f1e',
-                        'cheeky-charcoal': '#1a1a2e',
-                        'cheeky-cyan': '#00d4ff',
-                        'cheeky-blue': '#0f4c75',
-                        'cheeky-text': '#e8e8e8',
-                        'cheeky-text-muted': '#b0b0b0',
+                        'cheeky-dark': '#f5f5f5',
+                        'cheeky-charcoal': '#efefef',
+                        'cheeky-cyan': '#ff8c00',
+                        'cheeky-blue': '#e0e0e0',
+                        'cheeky-text': '#222222',
+                        'cheeky-text-muted': '#666666',
                     },
                     fontFamily: {
                         'sans': ['Inter', 'Poppins', 'system-ui', 'sans-serif'],
@@ -32,20 +32,21 @@
 
     <style>
         body {
-            background-color: #0f0f1e;
-            color: #e8e8e8;
+            background-color: #f5f5f5;
+            color: #222222;
         }
 
         .gradient-text {
-            background: linear-gradient(135deg, #00d4ff 0%, #0f4c75 100%);
+            background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            font-weight: 900;
         }
 
         .skeleton {
             animation: pulse 2s infinite;
-            background-color: #1a1a2e;
+            background-color: #efefef;
         }
 
         @keyframes pulse {
@@ -54,55 +55,62 @@
         }
 
         .station-card {
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            border: 2px solid #ddd;
         }
 
         .station-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 212, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 4px 4px 0px rgba(255, 140, 0, 0.3);
+            border-color: #ff8c00;
         }
 
         input:focus, textarea:focus {
             outline: none;
-            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+            box-shadow: inset 0 0 0 2px #ff8c00;
+            border-color: #ff8c00 !important;
         }
 
         .play-button {
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .play-button:hover {
-            background-color: #0f4c75;
             transform: scale(1.05);
         }
 
         .favorite-button {
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
         }
 
         .favorite-button:hover {
-            transform: scale(1.2);
+            transform: scale(1.15);
         }
 
         .scroll-smooth {
             scroll-behavior: smooth;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1); }
         }
     </style>
 </head>
 <body class="bg-cheeky-dark text-cheeky-text scroll-smooth">
     <div x-data="radioApp()" x-init="init()">
         <!-- Header -->
-        <header class="sticky top-0 z-50 border-b border-cheeky-charcoal bg-cheeky-dark/95 backdrop-blur">
+        <header class="sticky top-0 z-50 border-b-2 border-cheeky-charcoal bg-cheeky-dark">
             <div class="container mx-auto px-4 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="text-3xl font-bold gradient-text">
-                        ♪ Cheeky
+                    <div class="text-4xl font-black gradient-text">
+                        ♪ CHEEKY
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <div class="text-sm text-cheeky-text-muted">
-                        <span x-show="isConnected" class="text-cheeky-cyan">● Online</span>
-                        <span x-show="!isConnected" class="text-red-500">● Offline</span>
+                    <div class="text-sm font-bold text-cheeky-text-muted">
+                        <span x-show="isConnected" class="text-cheeky-cyan">● ONLINE</span>
+                        <span x-show="!isConnected" class="text-red-600">● OFFLINE</span>
                     </div>
                 </div>
             </div>
@@ -111,82 +119,82 @@
         <!-- Main Content -->
         <div class="container mx-auto px-4 py-8">
             <!-- Now Playing Card -->
-            <div class="mb-12">
-                <div class="bg-cheeky-charcoal rounded-2xl p-8 border border-cheeky-blue/30">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+            <div class="mb-8">
+                <div class="bg-cheeky-charcoal p-6 border-2 border-cheeky-blue max-w-lg">
+                    <div class="flex gap-6 items-start">
                         <!-- Album Art -->
-                        <div class="flex justify-center">
-                            <div class="relative w-48 h-48 rounded-xl overflow-hidden bg-cheeky-dark border-2 border-cheeky-cyan/30">
+                        <div class="flex-shrink-0">
+                            <div class="relative w-28 h-28 overflow-hidden bg-cheeky-blue border-2 border-cheeky-text">
                                 <img
-                                    :src="currentStation?.favicon || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%231a1a2e%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%2300d4ff%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
+                                    :src="currentStation?.favicon || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22efefef%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23ff8c00%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
                                     alt="Station Logo"
                                     class="w-full h-full object-cover"
-                                    onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%221a1a2e%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%2300d4ff%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
+                                    onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22efefef%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23ff8c00%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
                                 >
-                                <div x-show="isPlaying" class="absolute inset-0 flex items-center justify-center bg-black/40">
+                                <div x-show="isPlaying" class="absolute inset-0 flex items-center justify-center bg-black/30">
                                     <div class="flex gap-1">
-                                        <div class="w-1 bg-cheeky-cyan rounded-full" style="animation: bounce 1s infinite;"></div>
-                                        <div class="w-1 bg-cheeky-cyan rounded-full" style="animation: bounce 1s infinite; animation-delay: 0.2s;"></div>
-                                        <div class="w-1 bg-cheeky-cyan rounded-full" style="animation: bounce 1s infinite; animation-delay: 0.4s;"></div>
+                                        <div class="w-1 h-3 bg-cheeky-cyan" style="animation: bounce 1s infinite;"></div>
+                                        <div class="w-1 h-3 bg-cheeky-cyan" style="animation: bounce 1s infinite; animation-delay: 0.2s;"></div>
+                                        <div class="w-1 h-3 bg-cheeky-cyan" style="animation: bounce 1s infinite; animation-delay: 0.4s;"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Station Info & Controls -->
-                        <div class="md:col-span-2">
+                        <div class="flex-1 min-w-0">
                             <!-- Station Name -->
-                            <h2 class="text-4xl font-bold mb-2" x-text="currentStation?.name || 'No Station Selected'"></h2>
+                            <h2 class="text-xl font-black mb-1 truncate" x-text="currentStation?.name || 'No Station'"></h2>
 
                             <!-- Metadata -->
-                            <p class="text-cheeky-text-muted mb-6" x-text="currentMetadata?.title || 'Waiting for metadata...'"></p>
+                            <p class="text-sm text-cheeky-text-muted mb-4 truncate" x-text="currentMetadata?.title || 'Waiting...'"></p>
 
                             <!-- Volume Control -->
-                            <div class="mb-8">
-                                <label class="text-sm text-cheeky-text-muted block mb-2">Volume</label>
-                                <div class="flex items-center gap-4">
+                            <div class="mb-4">
+                                <label class="text-xs font-bold text-cheeky-text-muted block mb-2 uppercase">Volume</label>
+                                <div class="flex items-center gap-2">
                                     <input
                                         type="range"
                                         min="0"
                                         max="100"
                                         x-model="volume"
                                         @change="setVolume()"
-                                        class="flex-1 h-2 bg-cheeky-blue rounded-lg appearance-none cursor-pointer accent-cheeky-cyan"
+                                        class="flex-1 h-2 bg-cheeky-blue appearance-none cursor-pointer accent-cheeky-cyan"
                                     >
-                                    <span class="text-cheeky-cyan font-semibold w-12 text-right" x-text="volume + '%'"></span>
+                                    <span class="text-cheeky-cyan font-black w-8 text-right text-sm" x-text="volume + '%'"></span>
                                 </div>
                             </div>
 
                             <!-- Playback Controls -->
-                            <div class="flex gap-4">
+                            <div class="flex gap-2">
                                 <button
                                     @click="previousStation()"
-                                    class="play-button p-4 rounded-lg bg-cheeky-blue hover:bg-cheeky-blue text-cheeky-cyan border border-cheeky-blue transition-all"
+                                    class="play-button p-2 bg-cheeky-blue text-cheeky-text border-2 border-cheeky-text transition-all hover:bg-cheeky-cyan hover:text-cheeky-dark"
                                     title="Previous Station"
                                 >
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z"/></svg>
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z"/></svg>
                                 </button>
 
                                 <button
                                     @click="togglePlayPause()"
-                                    class="play-button flex-1 p-4 rounded-lg bg-cheeky-cyan text-cheeky-dark font-bold text-lg transition-all"
+                                    class="play-button flex-1 p-2 bg-cheeky-cyan text-cheeky-dark font-black text-xs transition-all hover:bg-orange-700 hover:text-white border-2 border-cheeky-text"
                                 >
-                                    <span x-show="!isPlaying">▶ Play</span>
-                                    <span x-show="isPlaying">❚❚ Pause</span>
+                                    <span x-show="!isPlaying">▶ PLAY</span>
+                                    <span x-show="isPlaying">❚❚ PAUSE</span>
                                 </button>
 
                                 <button
                                     @click="stop()"
-                                    class="play-button p-4 rounded-lg bg-cheeky-blue hover:bg-cheeky-blue text-cheeky-cyan border border-cheeky-blue transition-all"
+                                    class="play-button p-2 bg-cheeky-blue text-cheeky-text border-2 border-cheeky-text transition-all hover:bg-red-600 hover:text-white"
                                     title="Stop"
                                 >
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h12v12H6V4z"/></svg>
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h12v12H6V4z"/></svg>
                                 </button>
 
                                 <button
                                     @click="toggleFavorite()"
-                                    class="favorite-button p-4 rounded-lg border-2 transition-all"
-                                    :class="isFavorite ? 'border-cheeky-cyan bg-cheeky-cyan/10 text-cheeky-cyan' : 'border-cheeky-blue text-cheeky-text-muted'"
+                                    class="favorite-button p-2 border-2 transition-all"
+                                    :class="isFavorite ? 'border-cheeky-cyan bg-cheeky-cyan text-cheeky-dark' : 'border-cheeky-text bg-cheeky-charcoal text-cheeky-text'"
                                     title="Toggle Favorite"
                                 >
                                     <span x-show="isFavorite">♥</span>
@@ -209,21 +217,21 @@
                             x-model="searchQuery"
                             @keyup.debounce="search()"
                             placeholder="Search stations..."
-                            class="w-full px-4 py-3 rounded-lg bg-cheeky-charcoal border border-cheeky-blue/30 text-cheeky-text placeholder-cheeky-text-muted focus:border-cheeky-cyan transition-all"
+                            class="w-full px-4 py-3 bg-cheeky-charcoal border-2 border-cheeky-text text-cheeky-text placeholder-cheeky-text-muted focus:border-cheeky-cyan focus:bg-white transition-all font-semibold"
                         >
                     </div>
 
                     <!-- Favorites Section -->
                     <div class="mb-8">
-                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <h3 class="text-sm font-black mb-4 flex items-center gap-2 uppercase">
                             <span>★</span> Favorites
                         </h3>
                         <div class="space-y-2">
                             <template x-for="fav in favorites" :key="fav.uuid">
                                 <button
                                     @click="playStation(fav)"
-                                    class="w-full text-left px-3 py-2 rounded-lg bg-cheeky-charcoal hover:bg-cheeky-blue/30 text-cheeky-text hover:text-cheeky-cyan transition-all truncate"
-                                    :class="currentStation?.uuid === fav.uuid ? 'bg-cheeky-blue/50 text-cheeky-cyan' : ''"
+                                    class="w-full text-left px-3 py-2 bg-cheeky-charcoal border-2 border-cheeky-blue text-cheeky-text hover:border-cheeky-cyan hover:bg-white transition-all truncate font-semibold text-sm"
+                                    :class="currentStation?.uuid === fav.uuid ? 'border-cheeky-cyan bg-cheeky-cyan text-cheeky-dark' : ''"
                                     :title="fav.name"
                                     x-text="fav.name"
                                 ></button>
@@ -234,14 +242,14 @@
 
                     <!-- Recent Section -->
                     <div class="mb-8">
-                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <h3 class="text-sm font-black mb-4 flex items-center gap-2 uppercase">
                             <span>🕐</span> Recent
                         </h3>
                         <div class="space-y-2">
                             <template x-for="rec in recent" :key="rec.uuid">
                                 <button
                                     @click="playStationByUuid(rec.uuid, rec.name)"
-                                    class="w-full text-left px-3 py-2 rounded-lg bg-cheeky-charcoal hover:bg-cheeky-blue/30 text-cheeky-text hover:text-cheeky-cyan transition-all truncate"
+                                    class="w-full text-left px-3 py-2 bg-cheeky-charcoal border-2 border-cheeky-blue text-cheeky-text hover:border-cheeky-cyan hover:bg-white transition-all truncate font-semibold text-sm"
                                     :title="rec.name"
                                     x-text="rec.name"
                                 ></button>
@@ -252,19 +260,19 @@
 
                     <!-- Browse Section -->
                     <div class="mb-8">
-                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <h3 class="text-sm font-black mb-4 flex items-center gap-2 uppercase">
                             <span>📂</span> Browse
                         </h3>
                         <div class="space-y-2">
                             <button
                                 @click="showBrowseGenre = !showBrowseGenre"
-                                class="w-full text-left px-3 py-2 rounded-lg bg-cheeky-charcoal hover:bg-cheeky-blue/30 text-cheeky-text hover:text-cheeky-cyan transition-all"
+                                class="w-full text-left px-3 py-2 bg-cheeky-charcoal border-2 border-cheeky-blue text-cheeky-text hover:border-cheeky-cyan hover:bg-white transition-all font-semibold text-sm"
                             >
                                 By Genre →
                             </button>
                             <button
                                 @click="loadPopular()"
-                                class="w-full text-left px-3 py-2 rounded-lg bg-cheeky-charcoal hover:bg-cheeky-blue/30 text-cheeky-text hover:text-cheeky-cyan transition-all"
+                                class="w-full text-left px-3 py-2 bg-cheeky-charcoal border-2 border-cheeky-blue text-cheeky-text hover:border-cheeky-cyan hover:bg-white transition-all font-semibold text-sm"
                             >
                                 Popular
                             </button>
@@ -273,14 +281,14 @@
 
                     <!-- Bluetooth Manager Section -->
                     <div>
-                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <h3 class="text-sm font-black mb-4 flex items-center gap-2 uppercase">
                             <span>🔵</span> Speakers
                         </h3>
 
                         <!-- Scan Button -->
                         <button
                             @click="scanBluetoothDevices()"
-                            class="w-full px-3 py-2 rounded-lg bg-cheeky-cyan text-cheeky-dark font-semibold hover:bg-cheeky-cyan/80 transition-all mb-4 text-sm"
+                            class="w-full px-3 py-2 bg-cheeky-cyan text-cheeky-dark font-black border-2 border-cheeky-text hover:bg-orange-700 hover:text-white transition-all mb-4 text-sm uppercase"
                         >
                             🔍 Scan
                         </button>
@@ -288,35 +296,35 @@
                         <!-- Devices List -->
                         <div class="space-y-2">
                             <template x-for="device in bluetoothDevices" :key="device.mac">
-                                <div class="bg-cheeky-charcoal rounded-lg p-3 border border-cheeky-blue/20">
+                                <div class="bg-cheeky-charcoal p-3 border-2 border-cheeky-blue">
                                     <div class="flex items-start justify-between mb-2">
                                         <div class="flex-1 min-w-0">
                                             <p class="font-semibold truncate text-sm" :title="device.name" x-text="device.name"></p>
                                             <p class="text-xs text-cheeky-text-muted" x-text="device.mac"></p>
                                         </div>
                                         <div class="flex gap-1 ml-2">
-                                            <span x-show="device.connected" class="text-xs px-2 py-1 rounded bg-cheeky-cyan/20 text-cheeky-cyan">Connected</span>
-                                            <span x-show="!device.connected && device.paired" class="text-xs px-2 py-1 rounded bg-cheeky-blue/20 text-cheeky-blue">Paired</span>
+                                            <span x-show="device.connected" class="text-xs px-2 py-1 border border-cheeky-cyan bg-cheeky-cyan text-cheeky-dark font-bold">CONNECTED</span>
+                                            <span x-show="!device.connected && device.paired" class="text-xs px-2 py-1 border border-cheeky-blue bg-cheeky-blue text-cheeky-text font-bold">PAIRED</span>
                                         </div>
                                     </div>
                                     <div class="flex gap-2">
                                         <button
                                             x-show="!device.connected"
                                             @click="connectBluetoothDevice(device.mac)"
-                                            class="flex-1 px-2 py-1 rounded text-xs bg-cheeky-blue hover:bg-cheeky-cyan text-cheeky-text hover:text-cheeky-dark transition-all"
+                                            class="flex-1 px-2 py-1 text-xs bg-cheeky-blue hover:bg-cheeky-cyan text-cheeky-text hover:text-cheeky-dark transition-all border border-cheeky-text font-semibold"
                                         >
                                             Connect
                                         </button>
                                         <button
                                             x-show="device.connected"
                                             @click="disconnectBluetoothDevice(device.mac)"
-                                            class="flex-1 px-2 py-1 rounded text-xs bg-red-900/50 hover:bg-red-700 text-red-200 transition-all"
+                                            class="flex-1 px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white transition-all border border-red-900 font-semibold"
                                         >
                                             Disconnect
                                         </button>
                                         <button
                                             @click="removeBluetoothDevice(device.mac)"
-                                            class="px-2 py-1 rounded text-xs bg-red-900/30 hover:bg-red-900/50 text-red-300 transition-all"
+                                            class="px-2 py-1 text-xs bg-gray-400 hover:bg-red-600 text-cheeky-dark hover:text-white transition-all border border-cheeky-text font-semibold"
                                             title="Remove Device"
                                         >
                                             ✕
@@ -333,18 +341,18 @@
                 <main class="lg:col-span-3">
                     <!-- Search Results / Stations Grid -->
                     <div>
-                        <h2 class="text-2xl font-bold mb-6" x-text="searchQuery ? `Search Results for "${searchQuery}"` : 'Popular Stations'"></h2>
+                        <h2 class="text-2xl font-black mb-6 uppercase" x-text="searchQuery ? `Search Results for "${searchQuery}"` : 'Popular Stations'"></h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <template x-for="station in stations" :key="station.uuid">
-                                <div class="station-card bg-cheeky-charcoal rounded-xl p-5 border border-cheeky-blue/20 hover:border-cheeky-cyan/50 transition-all">
+                                <div class="station-card bg-cheeky-charcoal p-5 border-2 border-cheeky-text hover:border-cheeky-cyan transition-all">
                                     <!-- Station Logo -->
-                                    <div class="mb-4 h-20 rounded-lg overflow-hidden bg-cheeky-dark flex items-center justify-center">
+                                    <div class="mb-4 h-20 overflow-hidden bg-cheeky-blue flex items-center justify-center border border-cheeky-text">
                                         <img
-                                            :src="station.favicon || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%221a1a2e%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%2300d4ff%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
+                                            :src="station.favicon || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22efefef%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23ff8c00%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
                                             :alt="station.name"
                                             class="w-full h-full object-cover"
-                                            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%221a1a2e%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%2300d4ff%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
+                                            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22efefef%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23ff8c00%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
                                         >
                                     </div>
 
@@ -359,14 +367,14 @@
                                     <div class="flex gap-2">
                                         <button
                                             @click="playStation(station)"
-                                            class="flex-1 px-3 py-2 rounded-lg bg-cheeky-cyan text-cheeky-dark font-semibold hover:bg-cheeky-cyan/80 transition-all text-sm"
+                                            class="flex-1 px-3 py-2 bg-cheeky-cyan text-cheeky-dark font-black hover:bg-orange-700 hover:text-white transition-all text-sm border-2 border-cheeky-text uppercase"
                                         >
                                             ▶ Play
                                         </button>
                                         <button
                                             @click="toggleStationFavorite(station)"
-                                            class="px-3 py-2 rounded-lg border-2 transition-all"
-                                            :class="isStationFavorite(station.uuid) ? 'border-cheeky-cyan bg-cheeky-cyan/10 text-cheeky-cyan' : 'border-cheeky-blue text-cheeky-text-muted hover:border-cheeky-cyan'"
+                                            class="px-3 py-2 border-2 transition-all font-bold"
+                                            :class="isStationFavorite(station.uuid) ? 'border-cheeky-cyan bg-cheeky-cyan text-cheeky-dark' : 'border-cheeky-text bg-cheeky-charcoal text-cheeky-text hover:border-cheeky-cyan'"
                                         >
                                             <span x-show="isStationFavorite(station.uuid)">♥</span>
                                             <span x-show="!isStationFavorite(station.uuid)">♡</span>
@@ -394,17 +402,17 @@
                             <button
                                 @click="previousPage()"
                                 :disabled="currentPage === 0"
-                                class="px-6 py-2 rounded-lg border border-cheeky-blue bg-cheeky-charcoal text-cheeky-text hover:border-cheeky-cyan disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                class="px-6 py-2 border-2 border-cheeky-text bg-cheeky-charcoal text-cheeky-text hover:border-cheeky-cyan hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold"
                             >
                                 ← Previous
                             </button>
-                            <span class="px-4 py-2 text-cheeky-text">
+                            <span class="px-4 py-2 text-cheeky-text font-bold">
                                 Page <span x-text="currentPage + 1"></span>
                             </span>
                             <button
                                 @click="nextPage()"
                                 :disabled="(currentPage + 1) * 20 >= totalStations"
-                                class="px-6 py-2 rounded-lg border border-cheeky-blue bg-cheeky-charcoal text-cheeky-text hover:border-cheeky-cyan disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                class="px-6 py-2 border-2 border-cheeky-text bg-cheeky-charcoal text-cheeky-text hover:border-cheeky-cyan hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold"
                             >
                                 Next →
                             </button>
