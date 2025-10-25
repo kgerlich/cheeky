@@ -32,15 +32,39 @@ class PlayerController:
         self.current_metadata = {}
         self.volume = 75
         self.output_device = {"type": "local"}  # Default to local speaker
-        self.fade_duration = 0.5  # Fade duration in seconds (500ms)
+        self.fade_in_duration = 0.5  # Fade-in duration in seconds (500ms)
+        self.fade_out_duration = 2.0  # Fade-out duration in seconds (2s - conservative default)
         self.mpv_ipc_socket = None  # Path to MPV IPC socket
         self.metadata_callback = metadata_callback  # Callback for metadata updates
         self.metadata_task = None  # Background task for metadata polling
 
-    async def _fade_volume(self, from_vol: int, to_vol: int, duration: float = None):
+    async def _get_audio_buffer_duration(self) -> float:
+        """Query MPV for audio buffer duration to determine safe fade-out time"""
+        try:
+            # Try to get demuxer cache duration (stream buffer)
+            cache_duration = await self._query_mpv_property("demuxer-cache-duration")
+            if cache_duration and cache_duration > 0:
+                # Use cache duration, but cap at 5 seconds to avoid excessive fade times
+                buffer_time = min(float(cache_duration), 5.0)
+                print(f"[Cheeky] Detected buffer: {buffer_time:.1f}s")
+                return buffer_time
+        except Exception:
+            pass
+
+        # Fallback: conservative 2-second default
+        return 2.0
+
+    async def _fade_volume(self, from_vol: int, to_vol: int, duration: float = None, is_fade_out: bool = False):
         """Fade volume from one level to another over specified duration"""
         if duration is None:
-            duration = self.fade_duration
+            if is_fade_out:
+                # For fade-out, query buffer and use longer duration
+                duration = await self._get_audio_buffer_duration()
+                # Update the fade_out_duration for future reference
+                self.fade_out_duration = duration
+            else:
+                # For fade-in, use the fixed short duration
+                duration = self.fade_in_duration
 
         steps = 20  # Number of steps in the fade
         step_duration = duration / steps
@@ -341,7 +365,7 @@ class PlayerController:
                 try:
                     # Fade out volume before pausing to avoid click
                     print(f"[Cheeky] Fading out volume from {self.volume} to 0...")
-                    await self._fade_volume(self.volume, 0)
+                    await self._fade_volume(self.volume, 0, is_fade_out=True)
 
                     # Send pause command to MPV via stdin
                     self.mpv_process.stdin.write(b"set pause yes\n")
@@ -389,7 +413,7 @@ class PlayerController:
         if device_type != "airplay" and self.mpv_process and self.current_status == "playing":
             try:
                 print(f"[Cheeky] Fading out volume from {self.volume} to 0...")
-                await self._fade_volume(self.volume, 0)
+                await self._fade_volume(self.volume, 0, is_fade_out=True)
             except Exception as e:
                 print(f"[Cheeky] Error fading out: {e}")
 
