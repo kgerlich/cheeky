@@ -367,9 +367,9 @@ class PlayerController:
                     print(f"[Cheeky] Fading out volume from {self.volume} to 0...")
                     await self._fade_volume(self.volume, 0, is_fade_out=True)
 
-                    # Wait for hardware buffer to drain (200ms should be enough for most hardware)
+                    # Wait for hardware buffer to drain (1 second to ensure complete drainage)
                     print("[Cheeky] Draining hardware buffer...")
-                    await asyncio.sleep(0.2)
+                    await asyncio.sleep(1.0)
 
                     # Send pause command to MPV via stdin
                     self.mpv_process.stdin.write(b"set pause yes\n")
@@ -419,9 +419,9 @@ class PlayerController:
                 print(f"[Cheeky] Fading out volume from {self.volume} to 0...")
                 await self._fade_volume(self.volume, 0, is_fade_out=True)
 
-                # Wait for hardware buffer to drain (200ms should be enough for most hardware)
+                # Wait for hardware buffer to drain (1 second to ensure complete drainage)
                 print("[Cheeky] Draining hardware buffer...")
-                await asyncio.sleep(0.2)
+                await asyncio.sleep(1.0)
             except Exception as e:
                 print(f"[Cheeky] Error fading out: {e}")
 
