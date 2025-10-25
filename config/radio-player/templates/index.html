@@ -411,8 +411,19 @@
                             <p class="text-cheeky-text-muted text-sm sm:text-base">Loading your favorite stations...</p>
                         </div>
 
+                        <!-- Initial State (First Load) -->
+                        <div x-show="stations.length === 0 && !loading && isInitializing" class="flex flex-col items-center justify-center py-16 sm:py-20">
+                            <div class="mb-6">
+                                <div class="text-6xl animate-pulse">
+                                    ♪
+                                </div>
+                            </div>
+                            <p class="text-cheeky-text font-bold text-lg sm:text-xl mb-2">Ready to Discover!</p>
+                            <p class="text-cheeky-text-muted text-sm sm:text-base max-w-sm text-center">Stations will appear here once we've loaded them from our database. You can also search or browse categories on the left.</p>
+                        </div>
+
                         <!-- Empty State -->
-                        <div x-show="stations.length === 0 && !loading" class="flex flex-col items-center justify-center py-16 sm:py-20">
+                        <div x-show="stations.length === 0 && !loading && !isInitializing" class="flex flex-col items-center justify-center py-16 sm:py-20">
                             <div class="mb-6 text-5xl">📻</div>
                             <p class="text-cheeky-text font-bold text-lg sm:text-xl mb-2">No Stations Found</p>
                             <p class="text-cheeky-text-muted text-sm sm:text-base max-w-xs text-center">Try a different search or browse by category</p>
@@ -487,6 +498,7 @@
                 isFavorite: false,
                 volume: 75,
                 loading: false,
+                isInitializing: true,
                 searchQuery: '',
                 currentPage: 0,
                 stations: [],
@@ -636,6 +648,7 @@
                         this.totalStations = result.total;
                     }
                     this.loading = false;
+                    this.isInitializing = false;
                 },
 
                 async loadPopular() {
@@ -649,6 +662,7 @@
                         this.totalStations = result.total;
                     }
                     this.loading = false;
+                    this.isInitializing = false;
                 },
 
                 // Pagination
