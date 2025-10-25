@@ -3,97 +3,388 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cheeky Radio - Internet Radio for Raspberry Pi</title>
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'cheeky-dark': '#f5f5f5',
-                        'cheeky-charcoal': '#efefef',
-                        'cheeky-cyan': '#ff8c00',
-                        'cheeky-blue': '#e0e0e0',
-                        'cheeky-text': '#222222',
-                        'cheeky-text-muted': '#666666',
-                    },
-                    fontFamily: {
-                        'sans': ['Inter', 'Poppins', 'system-ui', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
+    <title>Cheeky Radio - Internet Radio Player</title>
 
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
-        body {
-            background-color: #f5f5f5;
-            color: #222222;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .gradient-text {
-            background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #d4d4d4;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ===================== HEADER ===================== */
+        header {
+            padding: 15px 30px;
+            background: rgba(42, 42, 42, 0.6);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-size: 1.8em;
+            font-weight: 900;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, #d4d4d4 0%, #a8a8a8 50%, #ff6b35 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            font-weight: 900;
+            text-transform: lowercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .skeleton {
-            animation: pulse 2s infinite;
-            background-color: #efefef;
+        .logo:hover {
+            letter-spacing: 0px;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; }
+        .logo::after {
+            content: '';
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 0.5em;
+            color: #ff6b35;
         }
 
-        .station-card {
-            transition: all 0.2s ease;
-            border: 2px solid #ddd;
+        .header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 30px;
         }
 
-        .station-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 4px 4px 0px rgba(255, 140, 0, 0.3);
-            border-color: #ff8c00;
+        .search-bar {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 25px;
+            color: #d4d4d4;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
         }
 
-        input:focus, textarea:focus {
+        .search-bar::placeholder {
+            color: #a8a8a8;
+        }
+
+        .search-bar:focus {
             outline: none;
-            box-shadow: inset 0 0 0 2px #ff8c00;
-            border-color: #ff8c00 !important;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 107, 53, 0.6);
+            box-shadow: 0 0 15px rgba(255, 107, 53, 0.2);
         }
 
-        .play-button {
-            transition: all 0.2s ease;
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
         }
 
-        .play-button:hover {
+        .icon-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: rgba(255, 107, 53, 0.1);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            color: #ff6b35;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1em;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 107, 53, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* ===================== MAIN CONTENT ===================== */
+        main {
+            flex: 1;
+            padding: 20px 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Hero Player */
+        .hero-player {
+            background: linear-gradient(135deg, rgba(42, 42, 42, 0.8) 0%, rgba(31, 31, 31, 0.9) 100%);
+            border-radius: 20px;
+            padding: 25px 40px;
+            border: 2px solid rgba(255, 107, 53, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .hero-player::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255, 107, 53, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .now-playing-label {
+            color: #ff6b35;
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .track-info {
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .track-title {
+            font-size: 2em;
+            font-weight: 900;
+            color: #d4d4d4;
+            margin-bottom: 5px;
+            line-height: 1.2;
+        }
+
+        .track-artist {
+            font-size: 1.1em;
+            color: #a8a8a8;
+            font-weight: 300;
+        }
+
+        .station-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: rgba(255, 107, 53, 0.15);
+            border: 1px solid rgba(255, 107, 53, 0.4);
+            border-radius: 15px;
+            color: #ff6b35;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        /* Progress Bar */
+        .progress-section {
+            margin: 15px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b35 0%, #ff8c5a 100%);
+            width: 0%;
+            border-radius: 3px;
+            position: relative;
+            transition: width 0.1s linear;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            background: #ff6b35;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 107, 53, 0.8);
+        }
+
+        .time-stamps {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #a8a8a8;
+        }
+
+        /* Player Controls */
+        .player-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .control-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: rgba(212, 212, 212, 0.1);
+            border: 2px solid rgba(212, 212, 212, 0.3);
+            color: #d4d4d4;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+        }
+
+        .control-btn:hover {
+            background: rgba(212, 212, 212, 0.2);
+            border-color: #d4d4d4;
             transform: scale(1.05);
         }
 
-        .favorite-button {
-            transition: all 0.15s ease;
+        .control-btn.play {
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
+            border: none;
+            color: #2a2a2a;
+            font-size: 1.6em;
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4);
         }
 
-        .favorite-button:hover {
-            transform: scale(1.15);
+        .control-btn.play:hover {
+            box-shadow: 0 15px 40px rgba(255, 107, 53, 0.6);
+            transform: scale(1.1);
         }
 
-        .scroll-smooth {
-            scroll-behavior: smooth;
+        /* Volume Control */
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 15px;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
         }
 
-        @keyframes bounce {
-            0%, 100% { transform: scaleY(0.5); }
-            50% { transform: scaleY(1); }
+        .volume-icon {
+            color: #ff6b35;
+            font-size: 1em;
+        }
+
+        .volume-slider {
+            width: 150px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .volume-fill {
+            height: 100%;
+            width: 70%;
+            background: linear-gradient(90deg, #ff6b35 0%, #ff8c5a 100%);
+            border-radius: 3px;
+        }
+
+        /* Station Grid */
+        .stations-section {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #d4d4d4;
+            position: relative;
+            padding-left: 15px;
+        }
+
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #ff6b35 0%, #ff8c5a 100%);
+            border-radius: 2px;
+        }
+
+        .search-input {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 8px;
+            color: #d4d4d4;
+            font-size: 0.9em;
+        }
+
+        .search-input::placeholder {
+            color: #a8a8a8;
+        }
+
+        .search-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #ff6b35;
+        }
+
+        .loading-spinner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            gap: 15px;
+        }
+
+        .spinner {
+            font-size: 3em;
+            animation: spin 1s linear infinite;
+            display: inline-block;
         }
 
         @keyframes spin {
@@ -101,464 +392,383 @@
             to { transform: rotate(360deg); }
         }
 
-        .spinner {
-            animation: spin 1s linear infinite;
-            display: inline-block;
+        .pulsing {
+            animation: pulse 2s ease-in-out infinite;
+            font-size: 3em;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        .station-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            flex: 1;
+            overflow-y: auto;
+            align-content: start;
+        }
+
+        .station-card {
+            background: linear-gradient(135deg, rgba(42, 42, 42, 0.6) 0%, rgba(31, 31, 31, 0.8) 100%);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 107, 53, 0.15);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            height: fit-content;
+        }
+
+        .station-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.05) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .station-card:hover {
+            border-color: rgba(255, 107, 53, 0.4);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.2);
+        }
+
+        .station-card:hover::before {
+            opacity: 1;
+        }
+
+        .station-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            margin-bottom: 12px;
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .station-name {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #d4d4d4;
+            margin-bottom: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .station-genre {
+            color: #a8a8a8;
+            font-size: 0.8em;
+        }
+
+        .station-listeners {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ff6b35;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+
+        .station-action-btn {
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(255, 107, 53, 0.2);
+            border: 1px solid rgba(255, 107, 53, 0.4);
+            color: #ff6b35;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .station-action-btn:hover {
+            background: rgba(255, 107, 53, 0.3);
+            border-color: #ff6b35;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            gap: 15px;
+            color: #a8a8a8;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            text-align: center;
+            max-width: 400px;
+        }
+
+        /* ===================== FOOTER ===================== */
+        footer {
+            background: rgba(42, 42, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 107, 53, 0.2);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .footer-left {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .footer-link {
+            color: #a8a8a8;
+            text-decoration: none;
+            font-size: 0.85em;
+            transition: color 0.3s ease;
+        }
+
+        .footer-link:hover {
+            color: #ff6b35;
+        }
+
+        .footer-right {
+            color: #a8a8a8;
+            font-size: 0.85em;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .station-grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 12px 20px;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .header-center {
+                order: 3;
+                width: 100%;
+                margin: 10px 0 0 0;
+            }
+
+            .search-bar {
+                max-width: 100%;
+            }
+
+            .logo {
+                font-size: 1.5em;
+            }
+
+            .track-title {
+                font-size: 1.5em;
+            }
+
+            main {
+                padding: 15px 20px;
+            }
+
+            .station-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 12px;
+            }
+
+            .control-btn {
+                width: 40px;
+                height: 40px;
+            }
+
+            .control-btn.play {
+                width: 55px;
+                height: 55px;
+            }
+
+            footer {
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px 20px;
+                text-align: center;
+            }
+
+            .footer-left {
+                flex-direction: column;
+                gap: 10px;
+            }
         }
     </style>
 </head>
-<body class="bg-cheeky-dark text-cheeky-text flex flex-col h-screen overflow-hidden">
-    <div x-data="radioApp()" x-init="init()" class="flex flex-col h-full">
-        <!-- Header -->
-        <header class="flex-shrink-0 border-b-2 border-cheeky-charcoal bg-cheeky-dark z-50">
-            <div class="px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
-                <div class="flex items-center gap-2 sm:gap-3">
-                    <div class="text-2xl sm:text-3xl lg:text-4xl font-black gradient-text">
-                        ♪ CHEEKY
-                    </div>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">cheeky</div>
+        <div class="header-center">
+            <input type="text" class="search-bar" placeholder="🔍 Search stations..." x-model="searchQuery" @keyup.debounce="search()">
+        </div>
+        <div class="header-right">
+            <button class="icon-btn" title="Settings">⚙️</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main x-data="radioApp()" @keydown.escape="searchQuery = ''; loadPopular()">
+        <!-- Hero Player -->
+        <div class="hero-player">
+            <div class="now-playing-label">Now Playing</div>
+            <div class="track-info">
+                <h1 class="track-title" x-text="currentStation?.name || 'No Station Selected'">No Station Selected</h1>
+                <p class="track-artist" x-text="isPlaying ? 'Currently playing...' : 'Select a station to start'"></p>
+                <span class="station-badge" x-show="currentStation" x-text="'🎵 ' + (currentStation?.country || 'Unknown')"></span>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-bar" @click="seekPlayback($event)">
+                    <div class="progress-fill" :style="{ width: playProgress + '%' }"></div>
                 </div>
-                <div class="flex items-center gap-2 sm:gap-4">
-                    <div class="text-xs sm:text-sm font-bold text-cheeky-text-muted">
-                        <span x-show="isConnected" class="text-cheeky-cyan">● ONLINE</span>
-                        <span x-show="!isConnected" class="text-red-600">● OFFLINE</span>
-                    </div>
+                <div class="time-stamps">
+                    <span x-text="formatTime(playbackTime)">0:00</span>
+                    <span x-text="formatTime(playbackDuration)">0:00</span>
                 </div>
             </div>
-        </header>
 
-        <!-- Main Content (scrollable) -->
-        <div class="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6">
-            <!-- Main Layout: Left column (now playing + sidebar) and right column (stations) -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                <!-- Left Column: Now Playing + Sidebar -->
-                <div class="lg:col-span-1 space-y-6">
-                    <!-- Now Playing Card -->
-                    <div>
-                        <div class="bg-cheeky-charcoal p-4 sm:p-6 border-2 border-cheeky-blue">
-                            <div class="flex gap-4 sm:gap-6 items-start">
-                                <!-- Album Art -->
-                                <div class="flex-shrink-0">
-                                    <div class="relative w-20 h-20 sm:w-28 sm:h-28 overflow-hidden bg-cheeky-blue border-2 border-cheeky-text">
-                                        <img
-                                            :src="currentStation?.favicon || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22efefef%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23ff8c00%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
-                                            alt="Station Logo"
-                                            class="w-full h-full object-cover"
-                                            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22efefef%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23ff8c00%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
-                                        >
-                                        <div x-show="isPlaying" class="absolute inset-0 flex items-center justify-center bg-black/30">
-                                            <div class="flex gap-1">
-                                                <div class="w-1 h-3 bg-cheeky-cyan" style="animation: bounce 1s infinite;"></div>
-                                                <div class="w-1 h-3 bg-cheeky-cyan" style="animation: bounce 1s infinite; animation-delay: 0.2s;"></div>
-                                                <div class="w-1 h-3 bg-cheeky-cyan" style="animation: bounce 1s infinite; animation-delay: 0.4s;"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+            <div class="player-controls">
+                <button class="control-btn" @click="previousStation()" title="Previous">⏮</button>
+                <button class="control-btn play" @click="togglePlay()" :title="isPlaying ? 'Pause' : 'Play'" x-text="isPlaying ? '⏸' : '▶'">▶</button>
+                <button class="control-btn" @click="nextStation()" title="Next">⏭</button>
+                <button class="control-btn" @click="toggleFavorite(currentStation)" :title="isFavorite ? 'Remove from favorites' : 'Add to favorites'" x-text="isFavorite ? '❤️' : '🤍'">🤍</button>
+            </div>
 
-                                <!-- Station Info & Controls -->
-                                <div class="flex-1 min-w-0">
-                                    <!-- Station Name -->
-                                    <h2 class="text-lg sm:text-xl font-black mb-1 truncate" x-text="currentStation?.name || 'No Station'"></h2>
-
-                                    <!-- Metadata -->
-                                    <p class="text-xs sm:text-sm text-cheeky-text-muted mb-3 truncate" x-text="currentMetadata?.title || 'Waiting...'"></p>
-
-                                    <!-- Volume Control -->
-                                    <div class="mb-3 hidden sm:block">
-                                        <label class="text-xs font-bold text-cheeky-text-muted block mb-1 uppercase">Vol</label>
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                x-model="volume"
-                                                @change="setVolume()"
-                                                class="flex-1 h-1 bg-cheeky-blue appearance-none cursor-pointer accent-cheeky-cyan"
-                                            >
-                                            <span class="text-cheeky-cyan font-black w-6 text-right text-xs" x-text="volume + '%'"></span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Playback Controls -->
-                                    <div class="flex gap-1 sm:gap-2">
-                                        <button
-                                            @click="previousStation()"
-                                            class="play-button p-1 sm:p-2 bg-cheeky-blue text-cheeky-text border-2 border-cheeky-text transition-all hover:bg-cheeky-cyan hover:text-cheeky-dark"
-                                            title="Previous Station"
-                                        >
-                                            <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z"/></svg>
-                                        </button>
-
-                                        <button
-                                            @click="togglePlayPause()"
-                                            class="play-button flex-1 p-1 sm:p-2 bg-cheeky-cyan text-cheeky-dark font-black text-xs transition-all hover:bg-orange-700 hover:text-white border-2 border-cheeky-text"
-                                        >
-                                            <span x-show="!isPlaying" class="hidden sm:inline">▶ PLAY</span>
-                                            <span x-show="!isPlaying" class="sm:hidden">▶</span>
-                                            <span x-show="isPlaying" class="hidden sm:inline">❚❚ PAUSE</span>
-                                            <span x-show="isPlaying" class="sm:hidden">❚❚</span>
-                                        </button>
-
-                                        <button
-                                            @click="stop()"
-                                            class="play-button p-1 sm:p-2 bg-cheeky-blue text-cheeky-text border-2 border-cheeky-text transition-all hover:bg-red-600 hover:text-white"
-                                            title="Stop"
-                                        >
-                                            <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h12v12H6V4z"/></svg>
-                                        </button>
-
-                                        <button
-                                            @click="toggleFavorite()"
-                                            class="favorite-button p-1 sm:p-2 border-2 transition-all text-lg sm:text-base"
-                                            :class="isFavorite ? 'border-cheeky-cyan bg-cheeky-cyan text-cheeky-dark' : 'border-cheeky-text bg-cheeky-charcoal text-cheeky-text'"
-                                            title="Toggle Favorite"
-                                        >
-                                            <span x-show="isFavorite">♥</span>
-                                            <span x-show="!isFavorite">♡</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Sidebar -->
-                    <aside>
-                    <!-- Search -->
-                    <div class="mb-8">
-                        <input
-                            type="text"
-                            x-model="searchQuery"
-                            @keyup.debounce="search()"
-                            placeholder="Search stations..."
-                            class="w-full px-4 py-3 bg-cheeky-charcoal border-2 border-cheeky-text text-cheeky-text placeholder-cheeky-text-muted focus:border-cheeky-cyan focus:bg-white transition-all font-semibold"
-                        >
-                    </div>
-
-                    <!-- Favorites Section -->
-                    <div class="mb-8">
-                        <h3 class="text-sm font-black mb-4 flex items-center gap-2 uppercase">
-                            <span>★</span> Favorites
-                        </h3>
-                        <div class="space-y-2">
-                            <template x-for="fav in favorites" :key="fav.uuid">
-                                <button
-                                    @click="playStation(fav)"
-                                    class="w-full text-left px-3 py-2 bg-cheeky-charcoal border-2 border-cheeky-blue text-cheeky-text hover:border-cheeky-cyan hover:bg-white transition-all truncate font-semibold text-sm"
-                                    :class="currentStation?.uuid === fav.uuid ? 'border-cheeky-cyan bg-cheeky-cyan text-cheeky-dark' : ''"
-                                    :title="fav.name"
-                                    x-text="fav.name"
-                                ></button>
-                            </template>
-                            <p x-show="favorites.length === 0" class="text-cheeky-text-muted text-sm italic">No favorites yet</p>
-                        </div>
-                    </div>
-
-                    <!-- Recent Section -->
-                    <div class="mb-8">
-                        <h3 class="text-sm font-black mb-4 flex items-center gap-2 uppercase">
-                            <span>🕐</span> Recent
-                        </h3>
-                        <div class="space-y-2">
-                            <template x-for="rec in recent" :key="rec.uuid">
-                                <button
-                                    @click="playStationByUuid(rec.uuid, rec.name)"
-                                    class="w-full text-left px-3 py-2 bg-cheeky-charcoal border-2 border-cheeky-blue text-cheeky-text hover:border-cheeky-cyan hover:bg-white transition-all truncate font-semibold text-sm"
-                                    :title="rec.name"
-                                    x-text="rec.name"
-                                ></button>
-                            </template>
-                            <p x-show="recent.length === 0" class="text-cheeky-text-muted text-sm italic">No recent history</p>
-                        </div>
-                    </div>
-
-                    <!-- Browse Section -->
-                    <div class="mb-8">
-                        <h3 class="text-sm font-black mb-4 flex items-center gap-2 uppercase">
-                            <span>📂</span> Browse
-                        </h3>
-                        <div class="space-y-2">
-                            <button
-                                @click="showBrowseGenre = !showBrowseGenre"
-                                class="w-full text-left px-3 py-2 bg-cheeky-charcoal border-2 border-cheeky-blue text-cheeky-text hover:border-cheeky-cyan hover:bg-white transition-all font-semibold text-sm"
-                            >
-                                By Genre →
-                            </button>
-                            <button
-                                @click="loadPopular()"
-                                class="w-full text-left px-3 py-2 bg-cheeky-charcoal border-2 border-cheeky-blue text-cheeky-text hover:border-cheeky-cyan hover:bg-white transition-all font-semibold text-sm"
-                            >
-                                Popular
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Bluetooth Manager Section -->
-                    <div>
-                        <h3 class="text-sm font-black mb-4 flex items-center gap-2 uppercase">
-                            <span>🔵</span> Speakers
-                        </h3>
-
-                        <!-- Scan Button -->
-                        <button
-                            @click="scanBluetoothDevices()"
-                            class="w-full px-3 py-2 bg-cheeky-cyan text-cheeky-dark font-black border-2 border-cheeky-text hover:bg-orange-700 hover:text-white transition-all mb-4 text-sm uppercase"
-                        >
-                            🔍 Scan
-                        </button>
-
-                        <!-- Devices List -->
-                        <div class="space-y-2">
-                            <template x-for="device in bluetoothDevices" :key="device.mac">
-                                <div class="bg-cheeky-charcoal p-3 border-2 border-cheeky-blue">
-                                    <div class="flex items-start justify-between mb-2">
-                                        <div class="flex-1 min-w-0">
-                                            <p class="font-semibold truncate text-sm" :title="device.name" x-text="device.name"></p>
-                                            <p class="text-xs text-cheeky-text-muted" x-text="device.mac"></p>
-                                        </div>
-                                        <div class="flex gap-1 ml-2">
-                                            <span x-show="device.connected" class="text-xs px-2 py-1 border border-cheeky-cyan bg-cheeky-cyan text-cheeky-dark font-bold">CONNECTED</span>
-                                            <span x-show="!device.connected && device.paired" class="text-xs px-2 py-1 border border-cheeky-blue bg-cheeky-blue text-cheeky-text font-bold">PAIRED</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button
-                                            x-show="!device.connected"
-                                            @click="connectBluetoothDevice(device.mac)"
-                                            class="flex-1 px-2 py-1 text-xs bg-cheeky-blue hover:bg-cheeky-cyan text-cheeky-text hover:text-cheeky-dark transition-all border border-cheeky-text font-semibold"
-                                        >
-                                            Connect
-                                        </button>
-                                        <button
-                                            x-show="device.connected"
-                                            @click="disconnectBluetoothDevice(device.mac)"
-                                            class="flex-1 px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white transition-all border border-red-900 font-semibold"
-                                        >
-                                            Disconnect
-                                        </button>
-                                        <button
-                                            @click="removeBluetoothDevice(device.mac)"
-                                            class="px-2 py-1 text-xs bg-gray-400 hover:bg-red-600 text-cheeky-dark hover:text-white transition-all border border-cheeky-text font-semibold"
-                                            title="Remove Device"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                </div>
-                            </template>
-                            <p x-show="bluetoothDevices.length === 0" class="text-cheeky-text-muted text-sm italic">No Bluetooth devices</p>
-                        </div>
-                    </div>
-                    </aside>
+            <div class="volume-control">
+                <span class="volume-icon">🔊</span>
+                <div class="volume-slider" @click="setVolume($event)">
+                    <div class="volume-fill" :style="{ width: volume + '%' }"></div>
                 </div>
-
-                <!-- Right Column: Stations Grid -->
-                <main class="lg:col-span-2">
-                    <!-- Search Results / Stations Grid -->
-                    <div>
-                        <h2 class="text-lg sm:text-2xl font-black mb-4 sm:mb-6 uppercase" x-text="searchQuery ? `Search Results for "${searchQuery}"` : 'Popular Stations'"></h2>
-
-                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-                            <template x-for="station in stations" :key="station.uuid">
-                                <div class="station-card bg-cheeky-charcoal p-3 sm:p-5 border-2 border-cheeky-text hover:border-cheeky-cyan transition-all">
-                                    <!-- Station Logo -->
-                                    <div class="mb-3 sm:mb-4 h-16 sm:h-20 overflow-hidden bg-cheeky-blue flex items-center justify-center border border-cheeky-text">
-                                        <img
-                                            :src="station.favicon || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22efefef%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23ff8c00%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
-                                            :alt="station.name"
-                                            class="w-full h-full object-cover"
-                                            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22efefef%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23ff8c00%22 font-size=%2240%22%3E♪%3C/text%3E%3C/svg%3E'"
-                                        >
-                                    </div>
-
-                                    <!-- Station Info -->
-                                    <h3 class="font-bold text-xs sm:text-sm mb-1 truncate" :title="station.name" x-text="station.name"></h3>
-                                    <p class="text-xs text-cheeky-text-muted mb-2 hidden sm:block">
-                                        <span x-text="station.country || 'Unknown'"></span>
-                                        <span x-show="station.bitrate"> • <span x-text="station.bitrate + 'kbps'"></span></span>
-                                    </p>
-
-                                    <!-- Controls -->
-                                    <div class="flex gap-1 sm:gap-2">
-                                        <button
-                                            @click="playStation(station)"
-                                            class="flex-1 px-2 sm:px-3 py-1 sm:py-2 bg-cheeky-cyan text-cheeky-dark font-black hover:bg-orange-700 hover:text-white transition-all text-xs sm:text-sm border-2 border-cheeky-text uppercase"
-                                        >
-                                            <span class="hidden sm:inline">▶ Play</span>
-                                            <span class="sm:hidden">▶</span>
-                                        </button>
-                                        <button
-                                            @click="toggleStationFavorite(station)"
-                                            class="px-2 sm:px-3 py-1 sm:py-2 border-2 transition-all font-bold text-lg sm:text-base"
-                                            :class="isStationFavorite(station.uuid) ? 'border-cheeky-cyan bg-cheeky-cyan text-cheeky-dark' : 'border-cheeky-text bg-cheeky-charcoal text-cheeky-text hover:border-cheeky-cyan'"
-                                        >
-                                            <span x-show="isStationFavorite(station.uuid)">♥</span>
-                                            <span x-show="!isStationFavorite(station.uuid)">♡</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-
-                        <!-- Loading State with Spinner -->
-                        <div x-show="loading" class="flex flex-col items-center justify-center py-16 sm:py-20">
-                            <div class="mb-6">
-                                <div class="spinner text-cheeky-cyan text-6xl">
-                                    ♪
-                                </div>
-                            </div>
-                            <p class="text-cheeky-text font-bold text-lg sm:text-xl mb-2">Updating Stations</p>
-                            <p class="text-cheeky-text-muted text-sm sm:text-base">Loading your favorite stations...</p>
-                        </div>
-
-                        <!-- Initial State (First Load) -->
-                        <div x-show="stations.length === 0 && !loading && isInitializing" class="flex flex-col items-center justify-center py-16 sm:py-20">
-                            <div class="mb-6">
-                                <div class="text-6xl animate-pulse">
-                                    ♪
-                                </div>
-                            </div>
-                            <p class="text-cheeky-text font-bold text-lg sm:text-xl mb-2">Ready to Discover!</p>
-                            <p class="text-cheeky-text-muted text-sm sm:text-base max-w-sm text-center">Stations will appear here once we've loaded them from our database. You can also search or browse categories on the left.</p>
-                        </div>
-
-                        <!-- Empty State -->
-                        <div x-show="stations.length === 0 && !loading && !isInitializing" class="flex flex-col items-center justify-center py-16 sm:py-20">
-                            <div class="mb-6 text-5xl">📻</div>
-                            <p class="text-cheeky-text font-bold text-lg sm:text-xl mb-2">No Stations Found</p>
-                            <p class="text-cheeky-text-muted text-sm sm:text-base max-w-xs text-center">Try a different search or browse by category</p>
-                        </div>
-
-                        <!-- Pagination -->
-                        <div x-show="totalStations > 0" class="mt-6 sm:mt-8 flex justify-center gap-2 sm:gap-4">
-                            <button
-                                @click="previousPage()"
-                                :disabled="currentPage === 0"
-                                class="px-3 sm:px-6 py-1 sm:py-2 border-2 border-cheeky-text bg-cheeky-charcoal text-cheeky-text hover:border-cheeky-cyan hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-xs sm:text-base"
-                            >
-                                <span class="hidden sm:inline">← Previous</span>
-                                <span class="sm:hidden">←</span>
-                            </button>
-                            <span class="px-2 sm:px-4 py-1 sm:py-2 text-cheeky-text font-bold text-xs sm:text-base">
-                                <span class="hidden sm:inline">Page </span><span x-text="currentPage + 1"></span>
-                            </span>
-                            <button
-                                @click="nextPage()"
-                                :disabled="(currentPage + 1) * 20 >= totalStations"
-                                class="px-3 sm:px-6 py-1 sm:py-2 border-2 border-cheeky-text bg-cheeky-charcoal text-cheeky-text hover:border-cheeky-cyan hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-xs sm:text-base"
-                            >
-                                <span class="hidden sm:inline">Next →</span>
-                                <span class="sm:hidden">→</span>
-                            </button>
-                        </div>
-                    </div>
-                </main>
+                <span style="color: #a8a8a8; font-size: 0.85em;" x-text="volume + '%'">70%</span>
             </div>
         </div>
 
-        <!-- Footer with Progress Bar -->
-        <footer class="flex-shrink-0 border-t-2 border-cheeky-charcoal bg-cheeky-dark">
-            <!-- Progress Bar -->
-            <div class="w-full bg-cheeky-blue h-2 sm:h-3 relative overflow-hidden">
-                <div
-                    class="bg-cheeky-cyan h-full transition-all duration-300 ease-out"
-                    :style="{ width: playProgress + '%' }"
-                    x-ref="progressBar"
-                ></div>
+        <!-- Stations Section -->
+        <div class="stations-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span x-show="!searchQuery">Discover Stations</span>
+                    <span x-show="searchQuery">Search Results</span>
+                </h2>
             </div>
 
-            <!-- Time Display and Volume -->
-            <div class="px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between text-xs sm:text-sm">
-                <div class="flex items-center gap-2 sm:gap-3 flex-1">
-                    <span class="text-cheeky-text-muted font-semibold" x-text="formatTime(playbackTime) + ' / ' + formatTime(playbackDuration)"></span>
-                </div>
-                <div class="hidden sm:flex items-center gap-2">
-                    <span class="text-cheeky-text-muted font-semibold">VOL:</span>
-                    <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        x-model="volume"
-                        @change="setVolume()"
-                        class="w-20 h-1 bg-cheeky-blue appearance-none cursor-pointer accent-cheeky-cyan"
-                    >
-                    <span class="text-cheeky-cyan font-black w-6 text-right" x-text="volume + '%'"></span>
+            <!-- Loading State (Active API Call) -->
+            <div x-show="loading" class="loading-spinner">
+                <div class="spinner">♪</div>
+                <p style="color: #ff6b35; font-weight: 700; font-size: 1.1em;">Updating Stations</p>
+                <p style="color: #a8a8a8; font-size: 0.95em;">Loading your favorite stations...</p>
+            </div>
+
+            <!-- Initial Load State (First Time) -->
+            <div x-show="stations.length === 0 && !loading && isInitializing" class="empty-state">
+                <div class="pulsing">♪</div>
+                <div class="empty-state-text">
+                    <p style="color: #d4d4d4; font-weight: 700; font-size: 1.1em; margin-bottom: 10px;">Ready to Discover!</p>
+                    <p>Stations will appear here once we've loaded them from our database. You can also search or browse.</p>
                 </div>
             </div>
-        </footer>
-    </div>
 
-    <!-- Alpine.js App Logic -->
+            <!-- Empty Search Results -->
+            <div x-show="stations.length === 0 && !loading && !isInitializing" class="empty-state">
+                <div class="empty-state-icon">📻</div>
+                <div class="empty-state-text">
+                    <p style="color: #d4d4d4; font-weight: 700; font-size: 1.1em; margin-bottom: 10px;">No Stations Found</p>
+                    <p>Try a different search or browse popular stations.</p>
+                </div>
+            </div>
+
+            <!-- Station Grid -->
+            <div class="station-grid" x-show="stations.length > 0">
+                <template x-for="station in stations" :key="station.uuid">
+                    <div class="station-card">
+                        <div class="station-icon">🎵</div>
+                        <h3 class="station-name" :title="station.name" x-text="station.name"></h3>
+                        <p class="station-genre" x-text="(station.country || 'Unknown') + ' • ' + (station.codec || 'Unknown')"></p>
+                        <div class="station-listeners" x-text="'🎧 ' + station.bitrate + ' kbps'"></div>
+                        <button class="station-action-btn" @click="playStation(station)" x-text="currentStation?.uuid === station.uuid && isPlaying ? '⏸ Pause' : '▶ Play'"></button>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Pagination -->
+            <div x-show="stations.length > 0 && totalStations > 20" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                <button class="station-action-btn" style="width: auto; padding: 8px 20px;" @click="previousPage()" x-show="currentPage > 0">← Previous</button>
+                <span style="color: #a8a8a8; display: flex; align-items: center; padding: 0 15px;" x-text="'Page ' + (currentPage + 1)"></span>
+                <button class="station-action-btn" style="width: auto; padding: 8px 20px;" @click="nextPage()" x-show="(currentPage + 1) * 20 < totalStations">Next →</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-left">
+            <span style="font-weight: 900; background: linear-gradient(135deg, #d4d4d4 0%, #ff6b35 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">cheeky</span>
+            <a href="#about" class="footer-link">About</a>
+            <a href="#help" class="footer-link">Help</a>
+            <a href="#privacy" class="footer-link">Privacy</a>
+        </div>
+        <div class="footer-right">
+            © 2025 Cheeky Radio. All rights reserved.
+        </div>
+    </footer>
+
     <script>
         function radioApp() {
             return {
-                // State
-                isConnected: false,
+                // UI State
+                loading: false,
+                isInitializing: true,
                 isPlaying: false,
                 isFavorite: false,
                 volume: 75,
-                loading: false,
-                isInitializing: true,
                 searchQuery: '',
                 currentPage: 0,
                 stations: [],
                 totalStations: 0,
-                favorites: [],
-                recent: [],
                 currentStation: null,
-                currentMetadata: {},
-                showBrowseGenre: false,
-                bluetoothDevices: [],
-                ws: null,
                 playProgress: 0,
                 playbackTime: 0,
                 playbackDuration: 0,
+                favorites: [],
+                recent: [],
+                ws: null,
 
-                // Initialize
-                async init() {
-                    await this.loadFavorites();
-                    await this.loadRecent();
-                    await this.loadBluetoothDevices();
-                    await this.loadPopular();
-                    await this.loadStatus();
-                    this.connectWebSocket();
-                },
-
-                // WebSocket
-                connectWebSocket() {
-                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                    this.ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-
-                    this.ws.onopen = () => {
-                        this.isConnected = true;
-                        console.log('[Cheeky] WebSocket connected');
-                    };
-
-                    this.ws.onmessage = (event) => {
-                        const data = JSON.parse(event.data);
-                        this.handleWebSocketMessage(data);
-                    };
-
-                    this.ws.onclose = () => {
-                        this.isConnected = false;
-                        console.log('[Cheeky] WebSocket disconnected');
-                        setTimeout(() => this.connectWebSocket(), 3000);
-                    };
-                },
-
-                handleWebSocketMessage(data) {
-                    if (data.type === 'playback_status') {
-                        this.isPlaying = data.status === 'playing';
-                        if (data.station) {
-                            this.currentStation = data.station;
-                        }
-                    } else if (data.type === 'metadata_update') {
-                        this.currentMetadata = data;
-                    } else if (data.type === 'volume_change') {
-                        this.volume = data.volume;
-                    } else if (data.type === 'favorites_updated') {
-                        this.loadFavorites();
+                // Utility: Format time
+                formatTime(seconds) {
+                    if (!seconds || isNaN(seconds)) return '0:00';
+                    const hours = Math.floor(seconds / 3600);
+                    const minutes = Math.floor((seconds % 3600) / 60);
+                    const secs = Math.floor(seconds % 60);
+                    if (hours > 0) {
+                        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
                     }
+                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
                 },
 
                 // API Calls
@@ -570,69 +780,31 @@
                         };
                         if (body) options.body = JSON.stringify(body);
 
-                        console.log(`[Cheeky] API ${method} /api${endpoint}`);
                         const response = await fetch(`/api${endpoint}`, options);
                         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        const result = await response.json();
-                        console.log(`[Cheeky] API response:`, result);
-                        return result;
+                        return await response.json();
                     } catch (error) {
-                        console.error(`[Cheeky] API Error on ${endpoint}: ${error.message}`);
+                        console.error('[Cheeky] API Error:', error);
                         return null;
                     }
                 },
 
-                // Station Management
-                async playStation(station) {
+                // Load popular stations
+                async loadPopular() {
                     this.loading = true;
-                    const result = await this.apiCall('POST', '/player/play', {
-                        station_uuid: station.uuid,
-                        stream_url: station.url,
-                        station_name: station.name,
-                        station_favicon: station.favicon
-                    });
+                    this.searchQuery = '';
+                    this.currentPage = 0;
+                    const result = await this.apiCall('GET', '/stations/popular?limit=20&offset=0');
 
                     if (result) {
-                        this.currentStation = station;
-                        this.isPlaying = true;
-                        this.isFavorite = await this.isStationFavorite(station.uuid);
+                        this.stations = result.stations;
+                        this.totalStations = result.total;
                     }
                     this.loading = false;
+                    this.isInitializing = false;
                 },
 
-                async playStationByUuid(uuid, name) {
-                    // Fetch station details first
-                    const station = await this.apiCall('GET', `/stations/${uuid}`);
-                    if (station) {
-                        await this.playStation(station);
-                    }
-                },
-
-                async togglePlayPause() {
-                    if (this.isPlaying) {
-                        await this.apiCall('POST', '/player/pause');
-                        this.isPlaying = false;
-                    } else if (this.currentStation) {
-                        await this.apiCall('POST', '/player/play', {
-                            station_uuid: this.currentStation.uuid,
-                            stream_url: this.currentStation.url,
-                            station_name: this.currentStation.name,
-                            station_favicon: this.currentStation.favicon
-                        });
-                        this.isPlaying = true;
-                    }
-                },
-
-                async stop() {
-                    await this.apiCall('POST', '/player/stop');
-                    this.isPlaying = false;
-                },
-
-                async setVolume() {
-                    await this.apiCall('POST', '/player/volume', { volume: parseInt(this.volume) });
-                },
-
-                // Search & Browse
+                // Search stations
                 async search() {
                     if (!this.searchQuery.trim()) {
                         await this.loadPopular();
@@ -651,184 +823,167 @@
                     this.isInitializing = false;
                 },
 
-                async loadPopular() {
-                    this.loading = true;
-                    this.searchQuery = '';
-                    this.currentPage = 0;
-                    const result = await this.apiCall('GET', '/stations/popular?limit=20&offset=0');
+                // Play station
+                async playStation(station) {
+                    if (this.currentStation?.uuid === station.uuid) {
+                        this.togglePlay();
+                        return;
+                    }
+
+                    const result = await this.apiCall('POST', '/player/play', {
+                        station_uuid: station.uuid,
+                        stream_url: station.url,
+                        station_name: station.name,
+                        station_favicon: station.favicon
+                    });
 
                     if (result) {
-                        this.stations = result.stations;
-                        this.totalStations = result.total;
+                        this.currentStation = station;
+                        this.isPlaying = true;
+                        this.checkFavorite();
                     }
-                    this.loading = false;
-                    this.isInitializing = false;
+                },
+
+                // Play/Pause
+                async togglePlay() {
+                    if (!this.currentStation) return;
+                    const endpoint = this.isPlaying ? '/player/pause' : '/player/resume';
+                    const result = await this.apiCall('POST', endpoint);
+                    if (result) {
+                        this.isPlaying = !this.isPlaying;
+                    }
+                },
+
+                // Next/Previous
+                async nextStation() {
+                    if (this.stations.length === 0) return;
+                    const currentIndex = this.stations.findIndex(s => s.uuid === this.currentStation?.uuid);
+                    const nextIndex = (currentIndex + 1) % this.stations.length;
+                    await this.playStation(this.stations[nextIndex]);
+                },
+
+                async previousStation() {
+                    if (this.stations.length === 0) return;
+                    const currentIndex = this.stations.findIndex(s => s.uuid === this.currentStation?.uuid);
+                    const prevIndex = currentIndex <= 0 ? this.stations.length - 1 : currentIndex - 1;
+                    await this.playStation(this.stations[prevIndex]);
+                },
+
+                // Volume
+                setVolume(event) {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    const percent = ((event.clientX - rect.left) / rect.width) * 100;
+                    this.volume = Math.max(0, Math.min(100, Math.round(percent)));
+                    this.apiCall('POST', '/player/volume', { volume: this.volume });
+                },
+
+                // Progress Seeking
+                seekPlayback(event) {
+                    if (this.playbackDuration === 0) return;
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    const percent = ((event.clientX - rect.left) / rect.width) * 100;
+                    const time = (percent / 100) * this.playbackDuration;
+                    this.apiCall('POST', '/player/seek', { position: time });
+                },
+
+                // Favorites
+                async toggleFavorite(station) {
+                    if (!station) return;
+                    if (this.isFavorite) {
+                        await this.apiCall('POST', `/favorites/remove`, { uuid: station.uuid });
+                    } else {
+                        await this.apiCall('POST', `/favorites/add`, {
+                            uuid: station.uuid,
+                            name: station.name,
+                            url: station.url,
+                            favicon: station.favicon
+                        });
+                    }
+                    this.checkFavorite();
+                },
+
+                checkFavorite() {
+                    this.isFavorite = this.favorites.some(f => f.uuid === this.currentStation?.uuid);
                 },
 
                 // Pagination
                 async nextPage() {
                     this.currentPage++;
                     const offset = this.currentPage * 20;
-
-                    let endpoint = `/stations/popular?limit=20&offset=${offset}`;
-                    if (this.searchQuery) {
-                        endpoint = `/stations/search?q=${encodeURIComponent(this.searchQuery)}&limit=20&offset=${offset}`;
-                    }
-
-                    this.loading = true;
+                    const endpoint = this.searchQuery
+                        ? `/stations/search?q=${encodeURIComponent(this.searchQuery)}&limit=20&offset=${offset}`
+                        : `/stations/popular?limit=20&offset=${offset}`;
                     const result = await this.apiCall('GET', endpoint);
                     if (result) {
                         this.stations = result.stations;
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
-                    this.loading = false;
                 },
 
                 async previousPage() {
-                    if (this.currentPage > 0) {
-                        this.currentPage--;
-                        const offset = this.currentPage * 20;
+                    this.currentPage = Math.max(0, this.currentPage - 1);
+                    const offset = this.currentPage * 20;
+                    const endpoint = this.searchQuery
+                        ? `/stations/search?q=${encodeURIComponent(this.searchQuery)}&limit=20&offset=${offset}`
+                        : `/stations/popular?limit=20&offset=${offset}`;
+                    const result = await this.apiCall('GET', endpoint);
+                    if (result) {
+                        this.stations = result.stations;
+                    }
+                },
 
-                        let endpoint = `/stations/popular?limit=20&offset=${offset}`;
-                        if (this.searchQuery) {
-                            endpoint = `/stations/search?q=${encodeURIComponent(this.searchQuery)}&limit=20&offset=${offset}`;
+                // WebSocket for real-time updates
+                connectWebSocket() {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    this.ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            if (data.type === 'playback_status') {
+                                this.isPlaying = data.status === 'playing';
+                            } else if (data.type === 'volume') {
+                                this.volume = data.volume;
+                            } else if (data.type === 'progress') {
+                                this.playbackTime = data.position;
+                                this.playbackDuration = data.duration;
+                                this.playProgress = (this.playbackTime / this.playbackDuration) * 100;
+                            }
+                        } catch (e) {
+                            console.error('[Cheeky] WebSocket parse error:', e);
                         }
-
-                        this.loading = true;
-                        const result = await this.apiCall('GET', endpoint);
-                        if (result) {
-                            this.stations = result.stations;
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-                        this.loading = false;
-                    }
+                    };
                 },
 
-                // Favorites
-                async loadFavorites() {
-                    const result = await this.apiCall('GET', '/favorites');
-                    if (result) {
-                        this.favorites = result.favorites;
-                    }
-                },
-
-                async isStationFavorite(uuid) {
-                    return this.favorites.some(f => f.uuid === uuid);
-                },
-
-                async toggleFavorite() {
-                    if (!this.currentStation) return;
-
-                    if (await this.isStationFavorite(this.currentStation.uuid)) {
-                        await this.apiCall('DELETE', `/favorites/${this.currentStation.uuid}`);
-                    } else {
-                        await this.apiCall('POST', '/favorites', this.currentStation);
-                    }
-
-                    await this.loadFavorites();
-                    this.isFavorite = await this.isStationFavorite(this.currentStation.uuid);
-                },
-
-                async toggleStationFavorite(station) {
-                    if (await this.isStationFavorite(station.uuid)) {
-                        await this.apiCall('DELETE', `/favorites/${station.uuid}`);
-                    } else {
-                        await this.apiCall('POST', '/favorites', station);
-                    }
-                    await this.loadFavorites();
-                },
-
-                // Recent History
-                async loadRecent() {
-                    const result = await this.apiCall('GET', '/recent');
-                    if (result) {
-                        this.recent = result.recent;
-                    }
-                },
-
-                // Status
-                async loadStatus() {
-                    const result = await this.apiCall('GET', '/player/status');
-                    if (result) {
-                        this.volume = result.volume;
-                        this.isPlaying = result.status === 'playing';
-                        if (result.station) {
-                            this.currentStation = result.station;
-                            this.isFavorite = await this.isStationFavorite(result.station.uuid);
-                        }
-                    }
-                },
-
-                // Bluetooth Management
-                async loadBluetoothDevices() {
-                    const result = await this.apiCall('GET', '/bluetooth/devices');
-                    if (result) {
-                        this.bluetoothDevices = result.devices || [];
-                    }
-                },
-
-                async scanBluetoothDevices() {
-                    const result = await this.apiCall('POST', '/bluetooth/scan');
-                    if (result) {
-                        console.log('[Cheeky] Scanning for Bluetooth devices...');
-                        // Reload devices after scan
-                        setTimeout(() => this.loadBluetoothDevices(), 2000);
-                    }
-                },
-
-                async connectBluetoothDevice(mac) {
-                    const result = await this.apiCall('POST', '/bluetooth/connect', { mac });
-                    if (result) {
-                        console.log(`[Cheeky] Connected to ${mac}`);
-                        await this.loadBluetoothDevices();
-                    }
-                },
-
-                async disconnectBluetoothDevice(mac) {
-                    const result = await this.apiCall('POST', '/bluetooth/disconnect', { mac });
-                    if (result) {
-                        console.log(`[Cheeky] Disconnected from ${mac}`);
-                        await this.loadBluetoothDevices();
-                    }
-                },
-
-                async removeBluetoothDevice(mac) {
-                    if (confirm(`Remove ${mac}?`)) {
-                        const result = await this.apiCall('POST', '/bluetooth/remove', { mac });
-                        if (result) {
-                            console.log(`[Cheeky] Removed ${mac}`);
-                            await this.loadBluetoothDevices();
-                        }
-                    }
-                },
-
-                previousStation() {
-                    if (this.recent.length > 1) {
-                        const prev = this.recent[1];
-                        this.playStationByUuid(prev.uuid, prev.name);
-                    }
-                },
-
-                // Helper Methods
-                formatTime(seconds) {
-                    if (!seconds || isNaN(seconds)) return '0:00';
-                    const hours = Math.floor(seconds / 3600);
-                    const minutes = Math.floor((seconds % 3600) / 60);
-                    const secs = Math.floor(seconds % 60);
-
-                    if (hours > 0) {
-                        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                    }
-                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-                },
-
+                // Update progress (for local demo)
                 updateProgress() {
-                    if (this.playbackDuration > 0) {
+                    if (this.isPlaying && this.playbackDuration > 0) {
+                        this.playbackTime = Math.min(this.playbackTime + 0.1, this.playbackDuration);
                         this.playProgress = (this.playbackTime / this.playbackDuration) * 100;
                     }
+                },
+
+                // Init
+                async init() {
+                    console.log('[Cheeky] Initializing radio player...');
+                    await this.loadPopular();
+                    this.connectWebSocket();
+                    setInterval(() => this.updateProgress(), 100);
                 }
             }
         }
+
+        // Auto-init on page load
+        document.addEventListener('alpine:init', () => {
+            console.log('[Cheeky] Alpine.js ready');
+        });
+
+        // Init when DOM is ready
+        setTimeout(() => {
+            const appEl = document.querySelector('[x-data]');
+            if (appEl && appEl.__x) {
+                appEl.__x.$data.init();
+            }
+        }, 100);
     </script>
 </body>
 </html>
