@@ -1,6 +1,7 @@
 #!/bin/bash
 # Run Cheeky Radio Player Locally for Development
 # Activates venv and starts the FastAPI server
+# Auto-runs setup if venv doesn't exist
 
 set -e
 
@@ -12,11 +13,13 @@ echo "🍑 Cheeky - Local Development Server"
 echo "=========================================="
 echo ""
 
-# Check if venv exists
+# Check if venv exists, if not run setup
 if [ ! -d "$PROJECT_DIR/venv" ]; then
-    echo "❌ Virtual environment not found!"
-    echo "Please run: ./scripts/setup-local.sh"
-    exit 1
+    echo "⚠️  Virtual environment not found!"
+    echo "Running setup... this may take a few minutes."
+    echo ""
+    "$SCRIPT_DIR/setup-local.sh"
+    echo ""
 fi
 
 echo "[Cheeky] Activating virtual environment..."
