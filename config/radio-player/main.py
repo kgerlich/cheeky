@@ -21,6 +21,7 @@ from backend.favorites import FavoritesManager
 from backend.recent import RecentManager
 from backend.websocket import WebSocketManager
 from backend.bluetooth import BluetoothManager
+from backend.airplay import AirplayManager
 
 # ============================================================================
 # Configuration
@@ -46,12 +47,22 @@ app.add_middleware(
 
 # Initialize core components
 config_mgr = ConfigManager(CONFIG_DIR)
-player = PlayerController(config_mgr)
+ws_manager = WebSocketManager()  # Init first so we can pass it to player
+
+# Metadata callback for PlayerController - broadcasts metadata via WebSocket
+def on_metadata_update(metadata: dict):
+    """Callback when metadata changes - broadcasts to all connected WebSocket clients"""
+    asyncio.create_task(ws_manager.broadcast({
+        "type": "metadata",
+        "data": metadata
+    }))
+
+player = PlayerController(config_mgr, metadata_callback=on_metadata_update)
 stations_client = StationsClient()
 favorites_mgr = FavoritesManager(CONFIG_DIR)
 recent_mgr = RecentManager(CONFIG_DIR)
-ws_manager = WebSocketManager()
 bluetooth_mgr = BluetoothManager()
+airplay_mgr = AirplayManager()
 
 # ============================================================================
 # Request/Response Models
@@ -156,7 +167,7 @@ async def get_station(uuid: str):
 async def play_station(request: PlayRequest):
     """Start playing a station"""
     try:
-        player.play(request.stream_url)
+        await player.play(request.stream_url)
 
         # Update recent history
         await recent_mgr.add(
@@ -195,7 +206,7 @@ async def play_station(request: PlayRequest):
 async def pause_playback():
     """Pause playback"""
     try:
-        player.pause()
+        await player.pause()
         await ws_manager.broadcast({
             "type": "playback_status",
             "status": "paused"
@@ -204,11 +215,24 @@ async def pause_playback():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/player/resume")
+async def resume_playback():
+    """Resume playback"""
+    try:
+        await player.resume()
+        await ws_manager.broadcast({
+            "type": "playback_status",
+            "status": "playing"
+        })
+        return {"status": "playing"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/player/stop")
 async def stop_playback():
     """Stop playback"""
     try:
-        player.stop()
+        await player.stop()
         await ws_manager.broadcast({
             "type": "playback_status",
             "status": "stopped"
@@ -223,7 +247,7 @@ async def set_volume(request: VolumeRequest):
     if not 0 <= request.volume <= 100:
         raise HTTPException(status_code=400, detail="Volume must be 0-100")
     try:
-        player.set_volume(request.volume)
+        await player.set_volume(request.volume)
         await config_mgr.set("volume", request.volume)
 
         await ws_manager.broadcast({
@@ -362,6 +386,22 @@ async def connect_bluetooth_device(request: dict):
         raise HTTPException(status_code=400, detail="MAC address required")
     try:
         result = await bluetooth_mgr.connect_device(mac)
+
+        # Set player output to this Bluetooth device
+        player.set_output_device({
+            "type": "bluetooth",
+            "mac": mac,
+            "name": request.get("name", "Bluetooth Device")
+        })
+
+        await ws_manager.broadcast({
+            "type": "bluetooth_connected",
+            "device": {
+                "mac": mac,
+                "name": request.get("name", "Bluetooth Device")
+            }
+        })
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -374,6 +414,14 @@ async def disconnect_bluetooth_device(request: dict):
         raise HTTPException(status_code=400, detail="MAC address required")
     try:
         result = await bluetooth_mgr.disconnect_device(mac)
+
+        # Reset player output to local speaker
+        player.set_output_device({"type": "local", "name": "This Device"})
+
+        await ws_manager.broadcast({
+            "type": "bluetooth_disconnected"
+        })
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -387,6 +435,98 @@ async def remove_bluetooth_device(request: dict):
     try:
         result = await bluetooth_mgr.remove_device(mac)
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# Airplay Management Endpoints
+# ============================================================================
+
+@app.get("/api/airplay/devices")
+async def get_airplay_devices():
+    """Discover available Airplay receiver devices"""
+    try:
+        devices = await airplay_mgr.discover_airplay_devices()
+
+        # Broadcast discovered devices to all connected WebSocket clients
+        await ws_manager.broadcast({
+            "type": "devices_updated",
+            "airplay_devices": devices
+        })
+
+        return {"devices": devices}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/airplay/connect")
+async def connect_airplay(request: dict):
+    """Connect to an Airplay receiver"""
+    address = request.get("address")
+    port = request.get("port", 5000)
+    name = request.get("name", "Airplay Device")
+    if not address:
+        raise HTTPException(status_code=400, detail="Airplay address required")
+    try:
+        result = await airplay_mgr.connect_airplay(address, port)
+
+        # Set player output to this Airplay device
+        player.set_output_device({
+            "type": "airplay",
+            "address": address,
+            "port": port,
+            "name": name
+        })
+
+        await ws_manager.broadcast({
+            "type": "airplay_connected",
+            "device": result.get("device")
+        })
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/airplay/disconnect")
+async def disconnect_airplay():
+    """Disconnect from Airplay receiver"""
+    try:
+        result = await airplay_mgr.disconnect_airplay()
+
+        # Reset player output to local speaker
+        player.set_output_device({"type": "local", "name": "This Device"})
+
+        await ws_manager.broadcast({
+            "type": "airplay_disconnected"
+        })
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/airplay/status")
+async def get_airplay_status():
+    """Get Airplay connection status"""
+    try:
+        status = await airplay_mgr.get_status()
+        return status
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/receivers")
+async def get_all_receivers():
+    """Get all available audio receivers (Bluetooth + Airplay)"""
+    try:
+        bluetooth_devices = await bluetooth_mgr.get_devices()
+        airplay_devices = await airplay_mgr.discover_airplay_devices()
+
+        return {
+            "receivers": {
+                "bluetooth": bluetooth_devices,
+                "airplay": airplay_devices
+            },
+            "connected": {
+                "type": "local",  # Default to local speaker
+                "device": None
+            }
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -470,26 +610,73 @@ async def test_stations():
     }
 
 # ============================================================================
+# Background Device Discovery
+# ============================================================================
+
+background_task = None
+
+async def poll_devices_background():
+    """Continuously poll for new Airplay/Bluetooth devices"""
+    print("[Cheeky] Starting background device discovery...")
+
+    while True:
+        try:
+            # Wait 60 seconds between scans
+            await asyncio.sleep(60)
+
+            print("[Cheeky] Background scan: Discovering Airplay devices...")
+            airplay_devices = await airplay_mgr.discover_airplay_devices()
+
+            # Broadcast updated device list to all connected clients
+            await ws_manager.broadcast({
+                "type": "devices_updated",
+                "airplay_devices": airplay_devices
+            })
+
+            print(f"[Cheeky] Background scan: Found {len(airplay_devices)} Airplay devices")
+
+        except Exception as e:
+            print(f"[Cheeky] Background device discovery error: {e}")
+            # Continue polling even on error
+            await asyncio.sleep(60)
+
+# ============================================================================
 # Startup & Shutdown
 # ============================================================================
 
 @app.on_event("startup")
 async def startup():
     """Initialize on startup"""
+    global background_task
+
     print("[Cheeky] Radio Player starting...")
     print(f"[Cheeky] Config directory: {CONFIG_DIR}")
 
     # Load saved volume
     volume = await config_mgr.get("volume", 75)
-    player.set_volume(volume)
+    await player.set_volume(volume)
+
+    # Start background device discovery
+    background_task = asyncio.create_task(poll_devices_background())
 
     print("[Cheeky] Radio Player ready!")
 
 @app.on_event("shutdown")
 async def shutdown():
     """Cleanup on shutdown"""
+    global background_task
+
     print("[Cheeky] Radio Player shutting down...")
-    player.stop()
+
+    # Cancel background task
+    if background_task:
+        background_task.cancel()
+        try:
+            await background_task
+        except asyncio.CancelledError:
+            pass
+
+    await player.stop()
 
 if __name__ == "__main__":
     import uvicorn

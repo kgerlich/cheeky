@@ -4,19 +4,37 @@ Radio Browser API Client - Fetches station data from Radio Browser
 
 import aiohttp
 import asyncio
+import socket
 from typing import Optional, List, Dict
 from datetime import datetime, timedelta
 
 class StationsClient:
     """Client for Radio Browser API"""
 
-    BASE_URL = "https://de1.api.radio-browser.info/json"
+    API_SERVERS = [
+        "https://de1.api.radio-browser.info",
+        "https://de2.api.radio-browser.info",
+        "https://fr1.api.radio-browser.info",
+        "https://fi1.api.radio-browser.info",
+        "https://at1.api.radio-browser.info",
+        "https://nl1.api.radio-browser.info",
+    ]
+
+    # User-Agent for API requests (required by Radio Browser)
+    USER_AGENT = "CheekyRadio/1.1.0"
 
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
         self.cache = {}
         self.cache_ttl = 300  # 5 minutes
-        print(f"[Cheeky] Stations client initialized. API: {self.BASE_URL}")
+        self.current_server_index = 0
+        print(f"[Cheeky] Stations client initialized. Using {len(self.API_SERVERS)} radio browser servers")
+
+    def _get_next_server(self) -> str:
+        """Get next API server URL and rotate index"""
+        url = self.API_SERVERS[self.current_server_index % len(self.API_SERVERS)]
+        self.current_server_index += 1
+        return url
 
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session"""
@@ -50,40 +68,45 @@ class StationsClient:
         if cached:
             return cached
 
-        try:
-            session = await self._get_session()
+        session = await self._get_session()
+        headers = {"User-Agent": self.USER_AGENT}
 
-            # Try search by name first
-            url = f"{self.BASE_URL}/stations/search"
-            params = {
-                "name": query,
-                "limit": limit,
-                "offset": offset,
-                "hidebroken": "true"
-            }
+        # Try each server in rotation until one succeeds
+        for attempt in range(len(self.API_SERVERS)):
+            try:
+                server = self._get_next_server()
+                url = f"{server}/json/stations/search"
+                params = {
+                    "name": query,
+                    "limit": limit,
+                    "offset": offset,
+                    "hidebroken": "true"
+                }
 
-            print(f"[Cheeky] Searching for '{query}' from {url}")
-            async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-                print(f"[Cheeky] Search API response status: {resp.status}")
-                if resp.status == 200:
-                    stations = await resp.json()
-                    print(f"[Cheeky] Got {len(stations)} results for '{query}'")
-                    result = {
-                        "stations": self._normalize_stations(stations),
-                        "total": len(stations)
-                    }
-                    await self._cache_set(cache_key, result)
-                    return result
-                else:
-                    text = await resp.text()
-                    print(f"[Cheeky] Search API error {resp.status}: {text[:200]}")
-                    raise Exception(f"API returned {resp.status}")
+                print(f"[Cheeky] Searching for '{query}' from {server}")
+                async with session.get(url, params=params, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 200:
+                        stations = await resp.json()
+                        print(f"[Cheeky] Got {len(stations)} results for '{query}'")
+                        result = {
+                            "stations": self._normalize_stations(stations),
+                            "total": len(stations)
+                        }
+                        await self._cache_set(cache_key, result)
+                        return result
+                    else:
+                        print(f"[Cheeky] Search API error {resp.status} from {server}, trying next...")
+                        continue
 
-        except Exception as e:
-            print(f"[Cheeky] Search error: {type(e).__name__}: {e}")
-            import traceback
-            traceback.print_exc()
-            return {"stations": [], "total": 0}
+            except asyncio.TimeoutError:
+                print(f"[Cheeky] Search timeout from {server}, trying next...")
+                continue
+            except Exception as e:
+                print(f"[Cheeky] Search error from {server}: {type(e).__name__}: {e}")
+                continue
+
+        print(f"[Cheeky] Search failed on all servers for '{query}'")
+        return {"stations": [], "total": 0}
 
     async def browse(
         self,
@@ -99,38 +122,50 @@ class StationsClient:
         if cached:
             return cached
 
-        try:
-            session = await self._get_session()
-            url = f"{self.BASE_URL}/stations/search"
+        session = await self._get_session()
+        headers = {"User-Agent": self.USER_AGENT}
 
-            params = {
-                "limit": limit,
-                "offset": offset,
-                "hidebroken": "true"
-            }
+        # Try each server in rotation until one succeeds
+        for attempt in range(len(self.API_SERVERS)):
+            try:
+                server = self._get_next_server()
+                url = f"{server}/json/stations/search"
 
-            if genre:
-                params["tag"] = genre
-            if country:
-                params["country"] = country
-            if language:
-                params["language"] = language
+                params = {
+                    "limit": limit,
+                    "offset": offset,
+                    "hidebroken": "true"
+                }
 
-            async with session.get(url, params=params) as resp:
-                if resp.status == 200:
-                    stations = await resp.json()
-                    result = {
-                        "stations": self._normalize_stations(stations),
-                        "total": len(stations)
-                    }
-                    await self._cache_set(cache_key, result)
-                    return result
-                else:
-                    raise Exception(f"API returned {resp.status}")
+                if genre:
+                    params["tag"] = genre
+                if country:
+                    params["country"] = country
+                if language:
+                    params["language"] = language
 
-        except Exception as e:
-            print(f"[Cheeky] Browse error: {e}")
-            return {"stations": [], "total": 0}
+                async with session.get(url, params=params, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 200:
+                        stations = await resp.json()
+                        result = {
+                            "stations": self._normalize_stations(stations),
+                            "total": len(stations)
+                        }
+                        await self._cache_set(cache_key, result)
+                        return result
+                    else:
+                        print(f"[Cheeky] Browse API error {resp.status} from {server}, trying next...")
+                        continue
+
+            except asyncio.TimeoutError:
+                print(f"[Cheeky] Browse timeout from {server}, trying next...")
+                continue
+            except Exception as e:
+                print(f"[Cheeky] Browse error from {server}: {type(e).__name__}: {e}")
+                continue
+
+        print(f"[Cheeky] Browse failed on all servers")
+        return {"stations": [], "total": 0}
 
     async def popular(
         self,
@@ -140,62 +175,82 @@ class StationsClient:
         """Get popular/top-rated stations"""
         cache_key = f"popular:{limit}:{offset}"
         cached = await self._cache_get(cache_key)
-        if cached:
+        if cached and cached.get("stations"):  # Only use cache if it has stations
             return cached
 
-        try:
-            session = await self._get_session()
-            url = f"{self.BASE_URL}/stations/topclick"
+        session = await self._get_session()
+        headers = {"User-Agent": self.USER_AGENT}
 
-            params = {
-                "limit": limit,
-                "offset": offset,
-                "hidebroken": "true"
-            }
+        # Try each server in rotation until one succeeds
+        for attempt in range(len(self.API_SERVERS)):
+            try:
+                server = self._get_next_server()
+                url = f"{server}/json/stations/topclick"
 
-            print(f"[Cheeky] Fetching popular stations from {url}")
-            async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-                print(f"[Cheeky] API response status: {resp.status}")
-                if resp.status == 200:
-                    stations = await resp.json()
-                    print(f"[Cheeky] Got {len(stations)} popular stations")
-                    result = {
-                        "stations": self._normalize_stations(stations),
-                        "total": len(stations)
-                    }
-                    await self._cache_set(cache_key, result)
-                    return result
-                else:
-                    text = await resp.text()
-                    print(f"[Cheeky] API error {resp.status}: {text[:200]}")
-                    raise Exception(f"API returned {resp.status}")
+                params = {
+                    "limit": limit,
+                    "offset": offset,
+                    "hidebroken": "true"
+                }
 
-        except Exception as e:
-            print(f"[Cheeky] Popular stations error: {type(e).__name__}: {e}")
-            import traceback
-            traceback.print_exc()
-            return {"stations": [], "total": 0}
+                print(f"[Cheeky] Fetching popular stations from {server}")
+                async with session.get(url, params=params, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 200:
+                        stations = await resp.json()
+                        print(f"[Cheeky] Got {len(stations)} popular stations from {server}")
+                        result = {
+                            "stations": self._normalize_stations(stations),
+                            "total": len(stations)
+                        }
+                        if result["stations"]:  # Only cache if we got results
+                            await self._cache_set(cache_key, result)
+                        return result
+                    else:
+                        print(f"[Cheeky] Popular API error {resp.status} from {server}, trying next...")
+                        continue
+
+            except asyncio.TimeoutError:
+                print(f"[Cheeky] Popular timeout from {server}, trying next...")
+                continue
+            except Exception as e:
+                print(f"[Cheeky] Popular stations error from {server}: {type(e).__name__}: {e}")
+                continue
+
+        print(f"[Cheeky] Popular stations failed on all servers")
+        return {"stations": [], "total": 0}
 
     async def get_station(self, uuid: str) -> Optional[Dict]:
         """Get detailed station information"""
-        try:
-            session = await self._get_session()
-            url = f"{self.BASE_URL}/stations/byuuid"
+        session = await self._get_session()
+        headers = {"User-Agent": self.USER_AGENT}
 
-            params = {"uuids": uuid}
+        # Try each server in rotation until one succeeds
+        for attempt in range(len(self.API_SERVERS)):
+            try:
+                server = self._get_next_server()
+                url = f"{server}/json/stations/byuuid"
 
-            async with session.get(url, params=params) as resp:
-                if resp.status == 200:
-                    stations = await resp.json()
-                    if stations:
-                        return self._normalize_station(stations[0])
-                    return None
-                else:
-                    raise Exception(f"API returned {resp.status}")
+                params = {"uuids": uuid}
 
-        except Exception as e:
-            print(f"[Cheeky] Get station error: {e}")
-            return None
+                async with session.get(url, params=params, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 200:
+                        stations = await resp.json()
+                        if stations:
+                            return self._normalize_station(stations[0])
+                        return None
+                    else:
+                        print(f"[Cheeky] Get station API error {resp.status} from {server}, trying next...")
+                        continue
+
+            except asyncio.TimeoutError:
+                print(f"[Cheeky] Get station timeout from {server}, trying next...")
+                continue
+            except Exception as e:
+                print(f"[Cheeky] Get station error from {server}: {type(e).__name__}: {e}")
+                continue
+
+        print(f"[Cheeky] Get station failed on all servers for uuid: {uuid}")
+        return None
 
     def _normalize_station(self, station: Dict) -> Dict:
         """Normalize station data to our format"""

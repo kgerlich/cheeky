@@ -129,6 +129,14 @@
             gap: 15px;
         }
 
+        /* Split Screen Layout */
+        .split-container {
+            display: flex;
+            gap: 15px;
+            flex-shrink: 0;
+            align-items: stretch;
+        }
+
         /* Hero Player */
         .hero-player {
             background: linear-gradient(135deg, rgba(42, 42, 42, 0.8) 0%, rgba(31, 31, 31, 0.9) 100%);
@@ -138,7 +146,85 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             position: relative;
             overflow: hidden;
-            flex-shrink: 0;
+            flex: 1;
+        }
+
+        /* Device List Panel */
+        .device-list-panel {
+            background: linear-gradient(135deg, rgba(42, 42, 42, 0.8) 0%, rgba(31, 31, 31, 0.9) 100%);
+            border-radius: 15px;
+            padding: 15px 20px;
+            border: 2px solid rgba(255, 107, 53, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .device-list-panel h3 {
+            margin: 0;
+            font-size: 1.1em;
+            color: #ff6b35;
+            font-weight: 700;
+        }
+
+        .device-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .device-group-title {
+            font-size: 0.85em;
+            color: #a8a8a8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .device-item {
+            padding: 12px 15px;
+            background: rgba(64, 64, 64, 0.5);
+            border: 1.5px solid rgba(255, 107, 53, 0.2);
+            border-radius: 8px;
+            color: #d4d4d4;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .device-item:hover {
+            background: rgba(64, 64, 64, 0.8);
+            border-color: #ff6b35;
+            transform: translateX(3px);
+        }
+
+        .device-item.active {
+            background: rgba(255, 107, 53, 0.2);
+            border-color: #ff6b35;
+            color: #ff6b35;
+            font-weight: 600;
+            box-shadow: 0 0 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .device-icon {
+            font-size: 1.2em;
+        }
+
+        .device-name {
+            flex: 1;
+        }
+
+        .no-devices-msg {
+            padding: 12px;
+            color: #a8a8a8;
+            font-size: 0.85em;
+            font-style: italic;
+            text-align: center;
         }
 
         .hero-player::before {
@@ -317,6 +403,214 @@
             width: 70%;
             background: linear-gradient(90deg, #ff6b35 0%, #ff8c5a 100%);
             border-radius: 2px;
+        }
+
+        /* Receiver Quick Select */
+        .receiver-quick-select {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .receiver-icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 107, 53, 0.2);
+            border: 1.5px solid #ff6b35;
+            color: #ff6b35;
+            font-size: 1.2em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .receiver-icon-btn:hover {
+            background: rgba(255, 107, 53, 0.3);
+            transform: scale(1.05);
+        }
+
+        .receiver-dropdown {
+            position: absolute;
+            bottom: 50px;
+            right: 0;
+            background: rgba(42, 42, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 8px;
+            min-width: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .dropdown-item {
+            padding: 10px 12px;
+            background: rgba(64, 64, 64, 0.5);
+            border: 1px solid transparent;
+            border-radius: 6px;
+            color: #d4d4d4;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(64, 64, 64, 0.8);
+            border-color: #ff6b35;
+        }
+
+        .dropdown-item.active {
+            background: rgba(255, 107, 53, 0.3);
+            border-color: #ff6b35;
+            color: #ff6b35;
+            font-weight: 600;
+        }
+
+        /* Settings Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+            position: sticky;
+            top: 0;
+            background: rgba(42, 42, 42, 0.5);
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.3em;
+            color: #ff6b35;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #a8a8a8;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .modal-close:hover {
+            color: #ff6b35;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .settings-section {
+            margin-bottom: 25px;
+        }
+
+        .settings-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 1em;
+            color: #ff6b35;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .receiver-selection {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .receiver-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .receiver-group h4 {
+            margin: 0;
+            font-size: 0.9em;
+            color: #d4d4d4;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+        }
+
+        .receiver-btn {
+            padding: 12px;
+            background: rgba(64, 64, 64, 0.5);
+            border: 1.5px solid rgba(255, 107, 53, 0.2);
+            border-radius: 8px;
+            color: #d4d4d4;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+            text-align: left;
+        }
+
+        .receiver-btn:hover {
+            background: rgba(64, 64, 64, 0.8);
+            border-color: #ff6b35;
+        }
+
+        .receiver-btn.active {
+            background: rgba(255, 107, 53, 0.2);
+            border-color: #ff6b35;
+            color: #ff6b35;
+            font-weight: 600;
+            box-shadow: 0 0 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .scan-btn {
+            background: rgba(255, 107, 53, 0.1);
+            border-color: rgba(255, 107, 53, 0.3);
+        }
+
+        .scan-btn:hover {
+            background: rgba(255, 107, 53, 0.2);
+        }
+
+        .no-devices {
+            padding: 12px;
+            color: #a8a8a8;
+            font-size: 0.85em;
+            font-style: italic;
+            text-align: center;
         }
 
         /* Station Grid */
@@ -670,10 +964,160 @@
             font-size: 0.85em;
         }
 
+        /* Player Disabled State */
+        .player-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .player-disabled::after {
+            content: '⚠ No output devices available. Open Settings to connect a speaker.';
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 107, 53, 0.9);
+            color: #1a1a1a;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        /* Notification Balloons */
+        .notifications-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 350px;
+            pointer-events: none;
+        }
+
+        .notification {
+            background: linear-gradient(135deg, rgba(42, 42, 42, 0.95) 0%, rgba(31, 31, 31, 0.98) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            pointer-events: auto;
+            animation: slideIn 0.3s ease-out;
+            min-width: 280px;
+        }
+
+        .notification.removing {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .notification-icon {
+            font-size: 1.5em;
+            flex-shrink: 0;
+        }
+
+        .notification-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .notification-title {
+            font-size: 0.9em;
+            font-weight: 700;
+            color: #ff6b35;
+        }
+
+        .notification-message {
+            font-size: 0.85em;
+            color: #d4d4d4;
+            line-height: 1.3;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: #a8a8a8;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .notification-close:hover {
+            color: #ff6b35;
+        }
+
+        .notification.success {
+            border-color: rgba(76, 175, 80, 0.4);
+        }
+
+        .notification.success .notification-title {
+            color: #4CAF50;
+        }
+
+        .notification.info {
+            border-color: rgba(33, 150, 243, 0.4);
+        }
+
+        .notification.info .notification-title {
+            color: #2196F3;
+        }
+
+        .notification.warning {
+            border-color: rgba(255, 152, 0, 0.4);
+        }
+
+        .notification.warning .notification-title {
+            color: #FF9800;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .station-grid {
                 grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }
+
+            /* Stack split-screen on tablet */
+            .split-container {
+                flex-direction: column;
             }
         }
 
@@ -732,6 +1176,26 @@
                 flex-direction: column;
                 gap: 10px;
             }
+
+            /* Notification adjustments for mobile */
+            .notifications-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+
+            .notification {
+                min-width: auto;
+            }
+
+            .notification-title {
+                font-size: 0.85em;
+            }
+
+            .notification-message {
+                font-size: 0.8em;
+            }
         }
     </style>
 </head>
@@ -740,44 +1204,191 @@
     <header>
         <div class="logo">cheeky</div>
         <div class="header-right">
-            <button class="icon-btn" title="Settings">⚙️</button>
+            <button class="icon-btn" title="Settings" @click="showSettingsModal = true">⚙️</button>
         </div>
     </header>
 
+    <!-- Settings Modal -->
+    <div class="modal-overlay" x-show="showSettingsModal" @click="showSettingsModal = false" style="display: none;">
+        <div class="modal" @click.stop>
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="modal-close" @click="showSettingsModal = false">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- Audio Output Receivers -->
+                <div class="settings-section">
+                    <h3>Audio Output</h3>
+                    <div class="receiver-selection">
+                        <div class="receiver-group">
+                            <h4>Local Speaker</h4>
+                            <button class="receiver-btn" :class="selectedReceiver?.type === 'local' && 'active'"
+                                @click="selectReceiver({type: 'local', device: null})" title="Play on this device">
+                                🔊 This Device
+                            </button>
+                        </div>
+                        <div class="receiver-group">
+                            <h4>Bluetooth Speakers</h4>
+                            <div x-show="bluetoothDevices.length === 0" class="no-devices">No Bluetooth devices found</div>
+                            <template x-for="device in bluetoothDevices" :key="device.mac">
+                                <button class="receiver-btn" :class="selectedReceiver?.type === 'bluetooth' && selectedReceiver?.device?.mac === device.mac && 'active'"
+                                    @click="selectReceiver({type: 'bluetooth', device: device})" :title="device.name">
+                                    📱 <span x-text="device.name"></span>
+                                </button>
+                            </template>
+                            <button class="receiver-btn scan-btn" @click="scanBluetoothDevices()" title="Scan for devices">
+                                🔍 Scan for Devices
+                            </button>
+                        </div>
+                        <div class="receiver-group">
+                            <h4>Airplay Receivers</h4>
+                            <div x-show="airplayDevices.length === 0" class="no-devices">No Airplay devices found</div>
+                            <template x-for="device in airplayDevices" :key="device.address">
+                                <button class="receiver-btn" :class="selectedReceiver?.type === 'airplay' && selectedReceiver?.device?.address === device.address && 'active'"
+                                    @click="selectReceiver({type: 'airplay', device: device})" :title="device.name">
+                                    🎵 <span x-text="device.name"></span>
+                                </button>
+                            </template>
+                            <button class="receiver-btn scan-btn" @click="discoverAirplayDevices()" title="Discover devices">
+                                🔍 Discover Airplay Devices
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main x-data="radioApp()" @keydown.escape="searchQuery = ''; loadPopular()">
-        <!-- Hero Player -->
-        <div class="hero-player">
-            <div class="now-playing-label">Now Playing</div>
-            <div class="track-info">
-                <h1 class="track-title" x-text="currentStation?.name || 'No Station Selected'">No Station Selected</h1>
-                <p class="track-artist" x-text="isPlaying ? 'Currently playing...' : 'Select a station to start'"></p>
-                <span class="station-badge" x-show="currentStation" x-text="'🎵 ' + (currentStation?.country || 'Unknown')"></span>
+        <!-- Notification Balloons Container -->
+        <div class="notifications-container">
+            <template x-for="notification in notifications" :key="notification.id">
+                <div class="notification" :class="[notification.type, notification.removing && 'removing']">
+                    <div class="notification-icon" x-text="notification.icon"></div>
+                    <div class="notification-content">
+                        <div class="notification-title" x-text="notification.title"></div>
+                        <div class="notification-message" x-text="notification.message"></div>
+                    </div>
+                    <button class="notification-close" @click="removeNotification(notification.id)" title="Dismiss">✕</button>
+                </div>
+            </template>
+        </div>
+
+        <!-- Split Screen: Player + Device List -->
+        <div class="split-container">
+            <!-- Hero Player -->
+            <div class="hero-player" :class="{'player-disabled': !hasOutputDevices()}">
+                <div class="now-playing-label">Now Playing</div>
+                <div class="track-info">
+                    <h1 class="track-title" x-text="currentStation?.name || 'No Station Selected'">No Station Selected</h1>
+                    <p class="track-artist" x-text="isPlaying ? 'Currently playing...' : 'Select a station to start'"></p>
+                    <span class="station-badge" x-show="currentStation" x-text="'🎵 ' + (currentStation?.country || 'Unknown')"></span>
+                </div>
+
+                <div class="progress-section">
+                    <div class="progress-bar" @click="seekPlayback($event)">
+                        <div class="progress-fill" :style="{ width: playProgress + '%' }"></div>
+                    </div>
+                    <div class="time-stamps">
+                        <span x-text="formatTime(playbackTime)">0:00</span>
+                        <span x-text="formatTime(playbackDuration)">0:00</span>
+                    </div>
+                </div>
+
+                <div class="player-controls">
+                    <button class="control-btn" @click="previousStation()" title="Previous">⏮</button>
+                    <button class="control-btn play" @click="togglePlay()" :title="isPlaying ? 'Pause' : 'Play'" x-text="isPlaying ? '⏸' : '▶'">▶</button>
+                    <button class="control-btn" @click="nextStation()" title="Next">⏭</button>
+                    <button class="control-btn" @click="toggleFavorite(currentStation)" :title="isFavorite ? 'Remove from favorites' : 'Add to favorites'" x-text="isFavorite ? '❤️' : '🤍'">🤍</button>
+                </div>
+
+                <div class="volume-control">
+                    <span class="volume-icon">🔊</span>
+                    <div class="volume-slider" @click="setVolume($event)">
+                        <div class="volume-fill" :style="{ width: volume + '%' }"></div>
+                    </div>
+                    <span style="color: #a8a8a8; font-size: 0.85em;" x-text="volume + '%'">70%</span>
+                </div>
+
+                <!-- Quick Receiver Selector -->
+                <div class="receiver-quick-select">
+                    <button class="receiver-icon-btn" @click="showReceiverDropdown = !showReceiverDropdown" title="Select audio output">
+                        <span x-show="selectedReceiver?.type === 'local'">🔊</span>
+                        <span x-show="selectedReceiver?.type === 'bluetooth'">📱</span>
+                        <span x-show="selectedReceiver?.type === 'airplay'">🎵</span>
+                    </button>
+                    <div class="receiver-dropdown" x-show="showReceiverDropdown" @click.away="showReceiverDropdown = false">
+                        <button class="dropdown-item" :class="selectedReceiver?.type === 'local' && 'active'"
+                            @click="selectReceiver({type: 'local', device: null}); showReceiverDropdown = false"
+                            title="Play on this device">
+                            🔊 This Device
+                        </button>
+                        <template x-for="device in bluetoothDevices" :key="device.mac">
+                            <button class="dropdown-item" :class="selectedReceiver?.type === 'bluetooth' && selectedReceiver?.device?.mac === device.mac && 'active'"
+                                @click="selectReceiver({type: 'bluetooth', device: device}); showReceiverDropdown = false"
+                                :title="device.name">
+                                📱 <span x-text="device.name"></span>
+                            </button>
+                        </template>
+                        <template x-for="device in airplayDevices" :key="device.address">
+                            <button class="dropdown-item" :class="selectedReceiver?.type === 'airplay' && selectedReceiver?.device?.address === device.address && 'active'"
+                                @click="selectReceiver({type: 'airplay', device: device}); showReceiverDropdown = false"
+                                :title="device.name">
+                                🎵 <span x-text="device.name"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
             </div>
 
-            <div class="progress-section">
-                <div class="progress-bar" @click="seekPlayback($event)">
-                    <div class="progress-fill" :style="{ width: playProgress + '%' }"></div>
-                </div>
-                <div class="time-stamps">
-                    <span x-text="formatTime(playbackTime)">0:00</span>
-                    <span x-text="formatTime(playbackDuration)">0:00</span>
-                </div>
-            </div>
+            <!-- Device List Panel -->
+            <div class="device-list-panel">
+                <h3>Available Devices</h3>
 
-            <div class="player-controls">
-                <button class="control-btn" @click="previousStation()" title="Previous">⏮</button>
-                <button class="control-btn play" @click="togglePlay()" :title="isPlaying ? 'Pause' : 'Play'" x-text="isPlaying ? '⏸' : '▶'">▶</button>
-                <button class="control-btn" @click="nextStation()" title="Next">⏭</button>
-                <button class="control-btn" @click="toggleFavorite(currentStation)" :title="isFavorite ? 'Remove from favorites' : 'Add to favorites'" x-text="isFavorite ? '❤️' : '🤍'">🤍</button>
-            </div>
-
-            <div class="volume-control">
-                <span class="volume-icon">🔊</span>
-                <div class="volume-slider" @click="setVolume($event)">
-                    <div class="volume-fill" :style="{ width: volume + '%' }"></div>
+                <!-- Local Speaker -->
+                <div class="device-group">
+                    <div class="device-group-title">Local Speaker</div>
+                    <div class="device-item" :class="selectedReceiver?.type === 'local' && 'active'"
+                         @click="selectReceiver({type: 'local', device: null})">
+                        <span class="device-icon">🔊</span>
+                        <span class="device-name">This Device</span>
+                    </div>
                 </div>
-                <span style="color: #a8a8a8; font-size: 0.85em;" x-text="volume + '%'">70%</span>
+
+                <!-- Bluetooth Devices -->
+                <div class="device-group">
+                    <div class="device-group-title">Bluetooth Speakers</div>
+                    <div x-show="bluetoothDevices.length === 0" class="no-devices-msg">No Bluetooth devices found</div>
+                    <template x-for="device in bluetoothDevices" :key="device.mac">
+                        <div class="device-item" :class="selectedReceiver?.type === 'bluetooth' && selectedReceiver?.device?.mac === device.mac && 'active'"
+                             @click="selectReceiver({type: 'bluetooth', device: device})">
+                            <span class="device-icon">📱</span>
+                            <span class="device-name" x-text="device.name"></span>
+                        </div>
+                    </template>
+                    <button class="device-item" style="border-style: dashed;" @click="scanBluetoothDevices()" title="Scan for Bluetooth devices">
+                        <span class="device-icon">🔍</span>
+                        <span class="device-name">Scan for Devices</span>
+                    </button>
+                </div>
+
+                <!-- Airplay Devices -->
+                <div class="device-group">
+                    <div class="device-group-title">Airplay Receivers</div>
+                    <div x-show="airplayDevices.length === 0" class="no-devices-msg">No Airplay devices found</div>
+                    <template x-for="device in airplayDevices" :key="device.address">
+                        <div class="device-item" :class="selectedReceiver?.type === 'airplay' && selectedReceiver?.device?.address === device.address && 'active'"
+                             @click="selectReceiver({type: 'airplay', device: device})">
+                            <span class="device-icon">🎵</span>
+                            <span class="device-name" x-text="device.name"></span>
+                        </div>
+                    </template>
+                    <button class="device-item" style="border-style: dashed;" @click="discoverAirplayDevices()" title="Discover Airplay devices">
+                        <span class="device-icon">🔍</span>
+                        <span class="device-name">Discover Devices</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -789,7 +1400,6 @@
                     <span x-show="activeTab === 'popular'">Popular Stations</span>
                     <span x-show="activeTab === 'recent'">Recent Stations</span>
                     <span x-show="activeTab === 'favorites'">Favorite Stations</span>
-                    <span x-show="activeTab === 'trending'">Trending Now</span>
                 </h2>
 
                 <!-- Tabs -->
@@ -798,7 +1408,6 @@
                     <button class="tab-btn" :class="activeTab === 'popular' && 'active'" @click="activeTab = 'popular'; loadPopular()">1. Popular</button>
                     <button class="tab-btn" :class="activeTab === 'recent' && 'active'" @click="activeTab = 'recent'; loadRecent()">2. Recent</button>
                     <button class="tab-btn" :class="activeTab === 'favorites' && 'active'" @click="activeTab = 'favorites'; loadFavorites()">3. Favorites</button>
-                    <button class="tab-btn" :class="activeTab === 'trending' && 'active'" @click="activeTab = 'trending'; loadTrending()">4. Trending</button>
                 </div>
 
                 <!-- Search Input (only show in Search tab) -->
@@ -860,26 +1469,38 @@
             <div x-show="stations.length === 0 && !loading && !isInitializing" class="empty-state">
                 <div class="empty-state-icon">📻</div>
                 <div class="empty-state-text">
-                    <p style="color: #d4d4d4; font-weight: 700; font-size: 1.1em; margin-bottom: 10px;">No Stations Found</p>
-                    <p>Try a different search or browse popular stations.</p>
+                    <p style="color: #d4d4d4; font-weight: 700; font-size: 1.1em; margin-bottom: 10px;">Station Service Unavailable</p>
+                    <p x-show="activeTab !== 'favorites'">The radio station database is currently unavailable. Please try again later or check your internet connection.</p>
+                    <p x-show="activeTab === 'favorites'">No favorite stations saved yet. Add stations to your favorites to see them here.</p>
                 </div>
             </div>
 
             <!-- Station Grid -->
-            <div class="station-grid" x-show="stations.length > 0">
-                <template x-for="station in stations" :key="station.uuid">
-                    <div class="station-card">
+            <div class="station-grid"
+                 x-show="stations.length > 0"
+                 @click="const target = $event.target.closest('.station-card') || $event.target;
+                         const btn = target.querySelector ? target.querySelector('.station-action-btn') : $event.target.closest('.station-card')?.querySelector('.station-action-btn');
+                         if (btn && btn.dataset.stationIndex !== undefined) {
+                             const index = parseInt(btn.dataset.stationIndex);
+                             if (!isNaN(index) && stations[index]) {
+                                 playStation(stations[index]);
+                             }
+                         }">
+                <template x-for="(station, index) in stations" :key="station.uuid">
+                    <div class="station-card" style="cursor: pointer;">
                         <div class="station-icon">
                             <img :src="station.favicon || ''"
                                  :alt="station.name"
-                                 @error="$el.style.display='none'; $el.parentElement.innerHTML='<div class=\\'station-icon-fallback\\'>🎵</div>'"
-                                 onerror="this.parentElement.innerHTML='<div class=\\'station-icon-fallback\\'>🎵</div>'"
+                                 @error="$el.style.display='none'; $el.parentElement.innerHTML=`<div class='station-icon-fallback'>🎵</div>`"
+                                 onerror="this.parentElement.innerHTML=`<div class='station-icon-fallback'>🎵</div>`; this.style.display='none';"
                                  style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                         <h3 class="station-name" :title="station.name" x-text="station.name"></h3>
                         <p class="station-genre" x-text="(station.country || 'Unknown') + ' • ' + (station.codec || 'Unknown')"></p>
                         <div class="station-listeners" x-text="'🎧 ' + station.bitrate + ' kbps'"></div>
-                        <button class="station-action-btn" @click="playStation(station)" x-text="currentStation?.uuid === station.uuid && isPlaying ? '⏸ Pause' : '▶ Play'"></button>
+                        <button class="station-action-btn"
+                                :data-station-index="index"
+                                x-text="currentStation?.uuid === station.uuid && isPlaying ? '⏸ Pause' : '▶ Play'"></button>
                     </div>
                 </template>
             </div>
@@ -897,9 +1518,6 @@
     <footer>
         <div class="footer-left">
             <span style="font-weight: 900; background: linear-gradient(135deg, #d4d4d4 0%, #ff6b35 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">cheeky</span>
-            <a href="#about" class="footer-link">About</a>
-            <a href="#help" class="footer-link">Help</a>
-            <a href="#privacy" class="footer-link">Privacy</a>
         </div>
         <div class="footer-right">
             © 2025 Cheeky Radio. All rights reserved.
@@ -934,6 +1552,17 @@
                 filterRegexError: '',
                 allStations: [],
 
+                // Receiver Selection
+                showSettingsModal: false,
+                showReceiverDropdown: false,
+                bluetoothDevices: [],
+                airplayDevices: [],
+                selectedReceiver: { type: 'local', device: null },
+
+                // Notifications
+                notifications: [],
+                notificationIdCounter: 0,
+
                 // Utility: Format time
                 formatTime(seconds) {
                     if (!seconds || isNaN(seconds)) return '0:00';
@@ -946,20 +1575,70 @@
                     return `${minutes}:${secs.toString().padStart(2, '0')}`;
                 },
 
+                // Check if output devices are available
+                hasOutputDevices() {
+                    return this.bluetoothDevices.length > 0 || this.airplayDevices.length > 0;
+                },
+
+                // Show notification
+                showNotification(title, message, type = 'info', icon = '📢', duration = 5000) {
+                    const id = this.notificationIdCounter++;
+                    const notification = {
+                        id,
+                        title,
+                        message,
+                        type, // 'info', 'success', 'warning'
+                        icon,
+                        removing: false
+                    };
+
+                    console.log('[Cheeky] Showing notification:', notification);
+                    this.notifications.push(notification);
+                    console.log('[Cheeky] Notifications array:', this.notifications);
+
+                    // Auto-dismiss after duration
+                    if (duration > 0) {
+                        setTimeout(() => {
+                            this.removeNotification(id);
+                        }, duration);
+                    }
+                },
+
+                // Remove notification
+                removeNotification(id) {
+                    const notification = this.notifications.find(n => n.id === id);
+                    if (notification) {
+                        notification.removing = true;
+                        // Wait for animation to complete before removing from array
+                        setTimeout(() => {
+                            const index = this.notifications.findIndex(n => n.id === id);
+                            if (index > -1) {
+                                this.notifications.splice(index, 1);
+                            }
+                        }, 300); // Match animation duration
+                    }
+                },
+
                 // API Calls
                 async apiCall(method, endpoint, body = null) {
                     try {
+                        console.log(`%c[Cheeky] 🌐 ${method} /api${endpoint}`, 'color: #ff6b35; font-weight: bold;', body || '');
                         const options = {
                             method,
                             headers: { 'Content-Type': 'application/json' }
                         };
                         if (body) options.body = JSON.stringify(body);
 
+                        const startTime = performance.now();
                         const response = await fetch(`/api${endpoint}`, options);
+                        const endTime = performance.now();
+
                         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        return await response.json();
+                        const result = await response.json();
+                        console.log(`%c[Cheeky] ✓ ${method} ${response.status} (${(endTime - startTime).toFixed(0)}ms)`, 'color: #4CAF50; font-weight: bold;', result);
+                        return result;
                     } catch (error) {
-                        console.error('[Cheeky] API Error:', error);
+                        console.error(`%c[Cheeky] ❌ API Error: ${method} /api${endpoint}`, 'color: #f44336; font-weight: bold;', error);
                         return null;
                     }
                 },
@@ -1014,23 +1693,6 @@
                     this.allStations = this.favorites;
                     this.stations = this.favorites;
                     this.totalStations = this.favorites.length;
-                    this.loading = false;
-                },
-
-                async loadTrending() {
-                    this.loading = true;
-                    this.filterCountry = '';
-                    this.filterTopic = '';
-                    this.filterBitrate = '';
-                    this.filterRegex = '';
-                    this.filterRegexError = '';
-                    // Use popular for trending
-                    const result = await this.apiCall('GET', '/stations/popular?limit=20&offset=0');
-                    if (result) {
-                        this.allStations = result.stations;
-                        this.stations = result.stations;
-                        this.totalStations = result.total;
-                    }
                     this.loading = false;
                 },
 
@@ -1100,10 +1762,12 @@
                 // Play station
                 async playStation(station) {
                     if (this.currentStation?.uuid === station.uuid) {
+                        console.log('%c▶ Toggling playback for current station', 'color: #00BCD4;');
                         this.togglePlay();
                         return;
                     }
 
+                    console.log(`%c▶ Playing Station: ${station.name}`, 'color: #4CAF50; font-weight: bold;', station);
                     const result = await this.apiCall('POST', '/player/play', {
                         station_uuid: station.uuid,
                         stream_url: station.url,
@@ -1115,6 +1779,7 @@
                         this.currentStation = station;
                         this.isPlaying = true;
                         this.checkFavorite();
+                        console.log('%c✓ Now playing:', 'color: #4CAF50;', station.name);
                     }
                 },
 
@@ -1122,10 +1787,11 @@
                 async togglePlay() {
                     if (!this.currentStation) return;
                     const endpoint = this.isPlaying ? '/player/pause' : '/player/resume';
-                    const result = await this.apiCall('POST', endpoint);
-                    if (result) {
-                        this.isPlaying = !this.isPlaying;
-                    }
+                    const action = this.isPlaying ? '⏸ Pausing' : '▶ Resuming';
+                    console.log(`%c${action}: ${this.currentStation.name}`, 'color: #FF9800;');
+                    // Don't manually toggle isPlaying - let WebSocket update handle it
+                    // This prevents race conditions and ensures UI matches backend state
+                    await this.apiCall('POST', endpoint);
                 },
 
                 // Next/Previous
@@ -1205,27 +1871,236 @@
                     }
                 },
 
+                // Receiver Management
+                async scanBluetoothDevices() {
+                    console.log('[Cheeky] Scanning for Bluetooth devices...');
+                    const result = await this.apiCall('POST', '/bluetooth/scan');
+                    if (result) {
+                        // Load devices after scan
+                        setTimeout(() => this.loadBluetoothDevices(), 2000);
+                    }
+                },
+
+                async loadBluetoothDevices() {
+                    const result = await this.apiCall('GET', '/bluetooth/devices');
+                    if (result) {
+                        this.bluetoothDevices = result.devices || [];
+                    }
+                },
+
+                async discoverAirplayDevices() {
+                    const result = await this.apiCall('GET', '/airplay/devices');
+                    if (result) {
+                        this.airplayDevices = result.devices || [];
+                    }
+                },
+
+                async selectReceiver(receiver) {
+                    this.selectedReceiver = receiver;
+
+                    // Connect to selected receiver
+                    if (receiver.type === 'bluetooth' && receiver.device) {
+                        await this.apiCall('POST', '/bluetooth/connect', { mac: receiver.device.mac });
+                    } else if (receiver.type === 'airplay' && receiver.device) {
+                        await this.apiCall('POST', '/airplay/connect', {
+                            address: receiver.device.address,
+                            port: receiver.device.port || 5000,
+                            name: receiver.device.name
+                        });
+                    } else if (receiver.type === 'local') {
+                        // Disconnect from external receivers
+                        if (this.selectedReceiver.type === 'bluetooth') {
+                            await this.apiCall('POST', '/bluetooth/disconnect', { mac: this.selectedReceiver.device.mac });
+                        } else if (this.selectedReceiver.type === 'airplay') {
+                            await this.apiCall('POST', '/airplay/disconnect');
+                        }
+                    }
+                },
+
+                async loadAllReceivers() {
+                    await this.loadBluetoothDevices();
+                    await this.discoverAirplayDevices();
+                },
+
                 // WebSocket for real-time updates
                 connectWebSocket() {
                     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                     this.ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
+                    this.ws.onopen = () => {
+                        console.log('%c[Cheeky] WebSocket connected - syncing state', 'color: #4CAF50;');
+                        // Request current state when connected
+                        this.syncState();
+                    };
+
                     this.ws.onmessage = (event) => {
                         try {
                             const data = JSON.parse(event.data);
+                            console.log('%c[Cheeky] WebSocket message:', 'color: #00BCD4;', data);
+
+                            // Handle different message types
                             if (data.type === 'playback_status') {
+                                const wasPlaying = this.isPlaying;
                                 this.isPlaying = data.status === 'playing';
-                            } else if (data.type === 'volume') {
+
+                                // Show notification on play/pause state changes
+                                if (!wasPlaying && this.isPlaying) {
+                                    // Started playing
+                                    const stationName = data.station?.name || this.currentStation?.name || 'Unknown Station';
+                                    this.showNotification(
+                                        'Now Playing',
+                                        stationName,
+                                        'success',
+                                        '▶️'
+                                    );
+                                } else if (wasPlaying && !this.isPlaying) {
+                                    // Paused or stopped
+                                    this.showNotification(
+                                        'Playback Paused',
+                                        'Playback has been paused',
+                                        'info',
+                                        '⏸️'
+                                    );
+                                }
+
+                                // Update current station if provided
+                                if (data.station) {
+                                    this.currentStation = data.station;
+                                }
+                            } else if (data.type === 'volume_change') {
                                 this.volume = data.volume;
                             } else if (data.type === 'progress') {
                                 this.playbackTime = data.position;
                                 this.playbackDuration = data.duration;
                                 this.playProgress = (this.playbackTime / this.playbackDuration) * 100;
+                            } else if (data.type === 'airplay_connected') {
+                                // Update selected receiver when Airplay connects
+                                if (data.device) {
+                                    this.selectedReceiver = {
+                                        type: 'airplay',
+                                        device: data.device
+                                    };
+                                    this.showNotification(
+                                        'Airplay Connected',
+                                        `Connected to ${data.device.name}`,
+                                        'success',
+                                        '🎵'
+                                    );
+                                }
+                            } else if (data.type === 'airplay_disconnected') {
+                                // Reset to local speaker
+                                this.selectedReceiver = { type: 'local', device: null };
+                                this.showNotification(
+                                    'Airplay Disconnected',
+                                    'Switched to local speaker',
+                                    'info',
+                                    '🔊'
+                                );
+                            } else if (data.type === 'bluetooth_connected') {
+                                // Update selected receiver when Bluetooth connects
+                                if (data.device) {
+                                    this.selectedReceiver = {
+                                        type: 'bluetooth',
+                                        device: data.device
+                                    };
+                                    this.showNotification(
+                                        'Bluetooth Connected',
+                                        `Connected to ${data.device.name}`,
+                                        'success',
+                                        '📱'
+                                    );
+                                }
+                            } else if (data.type === 'bluetooth_disconnected') {
+                                // Reset to local speaker
+                                this.selectedReceiver = { type: 'local', device: null };
+                                this.showNotification(
+                                    'Bluetooth Disconnected',
+                                    'Switched to local speaker',
+                                    'info',
+                                    '🔊'
+                                );
+                            } else if (data.type === 'favorites_updated') {
+                                // Reload favorites when they change
+                                this.loadFavorites();
+                            } else if (data.type === 'devices_updated') {
+                                // Update device lists from background discovery
+                                console.log('[Cheeky] ⚡ devices_updated WebSocket message received:', data);
+
+                                if (data.airplay_devices) {
+                                    const oldCount = this.airplayDevices.length;
+                                    console.log('[Cheeky] 📊 Before update - oldCount:', oldCount, 'devices:', this.airplayDevices);
+
+                                    this.airplayDevices = data.airplay_devices;
+                                    const newCount = data.airplay_devices.length;
+
+                                    console.log('[Cheeky] 📊 After update - newCount:', newCount, 'devices:', this.airplayDevices);
+                                    console.log(`%c[Cheeky] Devices updated: ${newCount} Airplay devices`, 'color: #00BCD4;');
+
+                                    // Show notification if devices were discovered
+                                    if (newCount > oldCount) {
+                                        const diff = newCount - oldCount;
+                                        console.log(`[Cheeky] 🔔 TRIGGERING notification: ${diff} new devices discovered`);
+                                        this.showNotification(
+                                            'Devices Discovered',
+                                            `Found ${diff} new Airplay ${diff === 1 ? 'device' : 'devices'}`,
+                                            'success',
+                                            '🔍'
+                                        );
+                                    } else if (newCount < oldCount) {
+                                        const diff = oldCount - newCount;
+                                        console.log(`[Cheeky] 🔔 TRIGGERING notification: ${diff} devices removed`);
+                                        this.showNotification(
+                                            'Devices Changed',
+                                            `${diff} Airplay ${diff === 1 ? 'device' : 'devices'} no longer available`,
+                                            'warning',
+                                            '⚠️'
+                                        );
+                                    } else {
+                                        console.log('[Cheeky] ℹ️ No count change (oldCount === newCount), no notification');
+                                    }
+                                } else {
+                                    console.log('[Cheeky] ⚠️ devices_updated message has no airplay_devices data');
+                                }
                             }
                         } catch (e) {
                             console.error('[Cheeky] WebSocket parse error:', e);
                         }
                     };
+
+                    this.ws.onclose = () => {
+                        console.log('%c[Cheeky] WebSocket disconnected - reconnecting in 3s', 'color: #FF9800;');
+                        setTimeout(() => this.connectWebSocket(), 3000);
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('[Cheeky] WebSocket error:', error);
+                    };
+                },
+
+                // Sync state from server (called when WebSocket connects)
+                async syncState() {
+                    try {
+                        // Get current player status
+                        const status = await this.apiCall('GET', '/player/status');
+                        if (status) {
+                            this.isPlaying = status.status === 'playing';
+                            this.volume = status.volume;
+                            this.currentStation = status.station;
+                        }
+
+                        // Get current output device status
+                        const airplayStatus = await this.apiCall('GET', '/airplay/status');
+                        if (airplayStatus && airplayStatus.connected) {
+                            this.selectedReceiver = {
+                                type: 'airplay',
+                                device: airplayStatus.device
+                            };
+                        }
+
+                        console.log('%c[Cheeky] ✓ State synced', 'color: #4CAF50;');
+                    } catch (e) {
+                        console.error('[Cheeky] Failed to sync state:', e);
+                    }
                 },
 
                 // Update progress (for local demo)
@@ -1238,26 +2113,22 @@
 
                 // Init
                 async init() {
-                    console.log('[Cheeky] Initializing radio player...');
+                    console.log('%c[Cheeky] 🎵 Initializing Radio Player v1.1.0...', 'color: #ff6b35; font-size: 14px; font-weight: bold;');
+                    console.log('Loading popular stations and receivers...');
+
+                    // Test notification on load
+                    this.showNotification('Welcome!', 'Radio player is ready', 'success', '🎵', 3000);
+
                     await this.loadPopular();
+                    await this.loadAllReceivers();
                     this.connectWebSocket();
+                    console.log('%c[Cheeky] ✓ Radio Player Ready!', 'color: #4CAF50; font-size: 12px; font-weight: bold;');
                     setInterval(() => this.updateProgress(), 100);
                 }
             }
         }
 
-        // Auto-init on page load
-        document.addEventListener('alpine:init', () => {
-            console.log('[Cheeky] Alpine.js ready');
-        });
-
-        // Init when DOM is ready
-        setTimeout(() => {
-            const appEl = document.querySelector('[x-data]');
-            if (appEl && appEl.__x) {
-                appEl.__x.$data.init();
-            }
-        }, 100);
+        // Let Alpine handle initialization naturally
     </script>
 </body>
 </html>
