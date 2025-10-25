@@ -99,6 +99,23 @@ Single user seeking a dedicated radio streaming device with a clean, modern web 
 **User Stories:**
 - As a user, I can quickly replay a station I listened to yesterday
 
+### 3.6 User Settings (P0 - Critical)
+
+**Requirements:**
+- Persistent settings storage (localStorage)
+- Audio/Playback settings: default volume, volume fading controls
+- Display settings: stations per page, grid density, metadata visibility
+- Behavior settings: remember last station, auto-reconnect, auto-play, notifications
+- Advanced settings: connection timeout, hardware buffer drain delay
+- Settings modal accessible from header
+- Save confirmation feedback
+
+**User Stories:**
+- As a user, I can customize audio fade-in/fade-out durations to eliminate clicks
+- As a user, I can set how many stations to show per page
+- As a user, I can configure auto-reconnect and auto-play behavior
+- As a user, my settings persist across browser sessions
+
 ---
 
 ## 4. User Interface
@@ -514,6 +531,7 @@ python3 backend/main.py
 - ✓ CSS styling (responsive)
 - ✓ Alpine.js integration
 - ✓ WebSocket client
+- ✓ User settings modal (localStorage persistence)
 
 ### Milestone 4: Integration & Testing (Week 4)
 - ✓ End-to-end testing

@@ -1199,7 +1199,7 @@
         }
     </style>
 </head>
-<body>
+<body x-data="radioApp()" @keydown.escape="searchQuery = ''; loadPopular()">
     <!-- Header -->
     <header>
         <div class="logo">cheeky</div>
@@ -1216,51 +1216,144 @@
                 <button class="modal-close" @click="showSettingsModal = false">✕</button>
             </div>
             <div class="modal-body">
-                <!-- Audio Output Receivers -->
+                <!-- Audio/Playback Settings -->
                 <div class="settings-section">
-                    <h3>Audio Output</h3>
-                    <div class="receiver-selection">
-                        <div class="receiver-group">
-                            <h4>Local Speaker</h4>
-                            <button class="receiver-btn" :class="selectedReceiver?.type === 'local' && 'active'"
-                                @click="selectReceiver({type: 'local', device: null})" title="Play on this device">
-                                🔊 This Device
-                            </button>
-                        </div>
-                        <div class="receiver-group">
-                            <h4>Bluetooth Speakers</h4>
-                            <div x-show="bluetoothDevices.length === 0" class="no-devices">No Bluetooth devices found</div>
-                            <template x-for="device in bluetoothDevices" :key="device.mac">
-                                <button class="receiver-btn" :class="selectedReceiver?.type === 'bluetooth' && selectedReceiver?.device?.mac === device.mac && 'active'"
-                                    @click="selectReceiver({type: 'bluetooth', device: device})" :title="device.name">
-                                    📱 <span x-text="device.name"></span>
-                                </button>
-                            </template>
-                            <button class="receiver-btn scan-btn" @click="scanBluetoothDevices()" title="Scan for devices">
-                                🔍 Scan for Devices
-                            </button>
-                        </div>
-                        <div class="receiver-group">
-                            <h4>Airplay Receivers</h4>
-                            <div x-show="airplayDevices.length === 0" class="no-devices">No Airplay devices found</div>
-                            <template x-for="device in airplayDevices" :key="device.address">
-                                <button class="receiver-btn" :class="selectedReceiver?.type === 'airplay' && selectedReceiver?.device?.address === device.address && 'active'"
-                                    @click="selectReceiver({type: 'airplay', device: device})" :title="device.name">
-                                    🎵 <span x-text="device.name"></span>
-                                </button>
-                            </template>
-                            <button class="receiver-btn scan-btn" @click="discoverAirplayDevices()" title="Discover devices">
-                                🔍 Discover Airplay Devices
-                            </button>
-                        </div>
+                    <h3>🎵 Audio & Playback</h3>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            Default Volume: <span x-text="settings.defaultVolume + '%'" style="color: #ff6b35;"></span>
+                        </label>
+                        <input type="range" min="0" max="100" x-model="settings.defaultVolume"
+                               style="width: 100%; accent-color: #ff6b35;">
                     </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            <input type="checkbox" x-model="settings.enableFading" style="accent-color: #ff6b35;">
+                            Enable Volume Fading
+                        </label>
+                    </div>
+
+                    <div style="margin-bottom: 15px;" x-show="settings.enableFading">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            Fade-In Duration: <span x-text="settings.fadeInDuration + 's'" style="color: #ff6b35;"></span>
+                        </label>
+                        <input type="range" min="0" max="2" step="0.1" x-model="settings.fadeInDuration"
+                               style="width: 100%; accent-color: #ff6b35;">
+                    </div>
+
+                    <div style="margin-bottom: 15px;" x-show="settings.enableFading">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            Fade-Out Duration: <span x-text="settings.fadeOutDuration + 's'" style="color: #ff6b35;"></span>
+                        </label>
+                        <input type="range" min="0" max="5" step="0.5" x-model="settings.fadeOutDuration"
+                               style="width: 100%; accent-color: #ff6b35;">
+                    </div>
+                </div>
+
+                <!-- UI/Display Settings -->
+                <div class="settings-section">
+                    <h3>🎨 Display</h3>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            Stations Per Page
+                        </label>
+                        <select x-model="settings.stationsPerPage" style="width: 100%; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,107,53,0.3); border-radius: 6px; color: #d4d4d4;">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            Grid Density
+                        </label>
+                        <select x-model="settings.gridDensity" style="width: 100%; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,107,53,0.3); border-radius: 6px; color: #d4d4d4;">
+                            <option value="compact">Compact</option>
+                            <option value="normal">Normal</option>
+                            <option value="spacious">Spacious</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            <input type="checkbox" x-model="settings.showMetadata" style="accent-color: #ff6b35;">
+                            Show Station Metadata (bitrate, country, codec)
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Behavior Settings -->
+                <div class="settings-section">
+                    <h3>⚙️ Behavior</h3>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            <input type="checkbox" x-model="settings.rememberLastStation" style="accent-color: #ff6b35;">
+                            Remember Last Played Station
+                        </label>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            <input type="checkbox" x-model="settings.autoReconnectDevice" style="accent-color: #ff6b35;">
+                            Auto-Reconnect to Last Device on Startup
+                        </label>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            <input type="checkbox" x-model="settings.autoPlayLastStation" style="accent-color: #ff6b35;">
+                            Auto-Play Last Station on Startup
+                        </label>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            <input type="checkbox" x-model="settings.showNotifications" style="accent-color: #ff6b35;">
+                            Show Notifications
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Advanced Settings -->
+                <div class="settings-section">
+                    <h3>🔧 Advanced</h3>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            Connection Timeout: <span x-text="settings.connectionTimeout + 's'" style="color: #ff6b35;"></span>
+                        </label>
+                        <input type="range" min="5" max="30" step="1" x-model="settings.connectionTimeout"
+                               style="width: 100%; accent-color: #ff6b35;">
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #d4d4d4; font-size: 0.9em; margin-bottom: 5px;">
+                            Hardware Buffer Drain Delay: <span x-text="settings.bufferDrainDelay + 's'" style="color: #ff6b35;"></span>
+                        </label>
+                        <input type="range" min="0" max="3" step="0.1" x-model="settings.bufferDrainDelay"
+                               style="width: 100%; accent-color: #ff6b35;">
+                        <p style="color: #a8a8a8; font-size: 0.75em; margin-top: 5px;">Prevents clicks when pausing/stopping playback</p>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div style="text-align: center; margin-top: 20px;">
+                    <button @click="saveSettings()" style="padding: 12px 30px; background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%); border: none; border-radius: 8px; color: #2a2a2a; font-weight: 700; cursor: pointer; font-size: 1em;">
+                        💾 Save Settings
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Main Content -->
-    <main x-data="radioApp()" @keydown.escape="searchQuery = ''; loadPopular()">
+    <main>
         <!-- Notification Balloons Container -->
         <div class="notifications-container">
             <template x-for="notification in notifications" :key="notification.id">
@@ -1562,6 +1655,27 @@
                 // Notifications
                 notifications: [],
                 notificationIdCounter: 0,
+
+                // Settings
+                settings: {
+                    // Audio/Playback
+                    defaultVolume: 75,
+                    enableFading: true,
+                    fadeInDuration: 0.5,
+                    fadeOutDuration: 2.0,
+                    // UI/Display
+                    stationsPerPage: 20,
+                    gridDensity: 'normal',
+                    showMetadata: true,
+                    // Behavior
+                    rememberLastStation: true,
+                    autoReconnectDevice: true,
+                    autoPlayLastStation: false,
+                    showNotifications: true,
+                    // Advanced
+                    connectionTimeout: 10,
+                    bufferDrainDelay: 1.0
+                },
 
                 // Utility: Format time
                 formatTime(seconds) {
@@ -2111,13 +2225,45 @@
                     }
                 },
 
+                // Load settings from localStorage
+                loadSettings() {
+                    try {
+                        const saved = localStorage.getItem('cheeky_settings');
+                        if (saved) {
+                            const parsed = JSON.parse(saved);
+                            this.settings = { ...this.settings, ...parsed };
+                            console.log('[Cheeky] ✓ Settings loaded from localStorage');
+                        }
+                    } catch (e) {
+                        console.error('[Cheeky] Failed to load settings:', e);
+                    }
+                },
+
+                // Save settings to localStorage
+                saveSettings() {
+                    try {
+                        localStorage.setItem('cheeky_settings', JSON.stringify(this.settings));
+                        this.showNotification('Settings Saved', 'Your settings have been saved successfully', 'success', '💾', 3000);
+                        this.showSettingsModal = false;
+                        console.log('[Cheeky] ✓ Settings saved to localStorage');
+                    } catch (e) {
+                        console.error('[Cheeky] Failed to save settings:', e);
+                        this.showNotification('Save Failed', 'Could not save settings', 'warning', '⚠️', 3000);
+                    }
+                },
+
                 // Init
                 async init() {
                     console.log('%c[Cheeky] 🎵 Initializing Radio Player v1.1.0...', 'color: #ff6b35; font-size: 14px; font-weight: bold;');
                     console.log('Loading popular stations and receivers...');
 
-                    // Test notification on load
-                    this.showNotification('Welcome!', 'Radio player is ready', 'success', '🎵', 3000);
+                    // Load settings first
+                    this.loadSettings();
+
+                    // Test notification on load (respect showNotifications setting)
+                    if (this.settings.showNotifications) {
+                        this.showNotification('Welcome!', 'Radio player is ready', 'success', '🎵', 3000);
+                    }
 
                     await this.loadPopular();
                     await this.loadAllReceivers();
