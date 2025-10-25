@@ -739,9 +739,6 @@
     <!-- Header -->
     <header>
         <div class="logo">cheeky</div>
-        <div class="header-center">
-            <input type="text" class="search-bar" placeholder="🔍 Search stations..." x-model="searchQuery" @keyup.debounce="search()">
-        </div>
         <div class="header-right">
             <button class="icon-btn" title="Settings">⚙️</button>
         </div>
@@ -788,20 +785,29 @@
         <div class="stations-section">
             <div class="section-header">
                 <h2 class="section-title">
-                    <span x-show="!searchQuery">Discover Stations</span>
-                    <span x-show="searchQuery">Search Results</span>
+                    <span x-show="activeTab === 'search'">Search Results</span>
+                    <span x-show="activeTab === 'popular'">Popular Stations</span>
+                    <span x-show="activeTab === 'recent'">Recent Stations</span>
+                    <span x-show="activeTab === 'favorites'">Favorite Stations</span>
+                    <span x-show="activeTab === 'trending'">Trending Now</span>
                 </h2>
 
                 <!-- Tabs -->
-                <div class="tabs-container" x-show="!searchQuery">
+                <div class="tabs-container">
+                    <button class="tab-btn" :class="activeTab === 'search' && 'active'" @click="activeTab = 'search'">🔍 Search</button>
                     <button class="tab-btn" :class="activeTab === 'popular' && 'active'" @click="activeTab = 'popular'; loadPopular()">1. Popular</button>
                     <button class="tab-btn" :class="activeTab === 'recent' && 'active'" @click="activeTab = 'recent'; loadRecent()">2. Recent</button>
                     <button class="tab-btn" :class="activeTab === 'favorites' && 'active'" @click="activeTab = 'favorites'; loadFavorites()">3. Favorites</button>
                     <button class="tab-btn" :class="activeTab === 'trending' && 'active'" @click="activeTab = 'trending'; loadTrending()">4. Trending</button>
                 </div>
 
+                <!-- Search Input (only show in Search tab) -->
+                <div class="filter-controls" x-show="activeTab === 'search'" style="margin-top: 5px;">
+                    <input type="text" class="filter-select" style="flex: 1; max-width: none;" x-model="searchQuery" @keyup.debounce="search()" placeholder="🔍 Search stations...">
+                </div>
+
                 <!-- Filters -->
-                <div class="filter-controls" x-show="!searchQuery">
+                <div class="filter-controls" x-show="activeTab !== 'search'">
                     <span class="filter-label">Filter:</span>
                     <input type="text" class="filter-select" style="width: 140px;" x-model="filterRegex" @input="applyFilters()" placeholder="Regex pattern..." title="JavaScript regex to match station names">
                     <select class="filter-select" x-model="filterCountry" @change="applyFilters()">
@@ -812,6 +818,15 @@
                         <option value="FR">France</option>
                         <option value="CA">Canada</option>
                         <option value="AU">Australia</option>
+                    </select>
+                    <select class="filter-select" x-model="filterTopic" @change="applyFilters()">
+                        <option value="">All Topics</option>
+                        <option value="music">Music</option>
+                        <option value="talk">Talk</option>
+                        <option value="news">News</option>
+                        <option value="rock">Rock</option>
+                        <option value="jazz">Jazz</option>
+                        <option value="pop">Pop</option>
                     </select>
                     <select class="filter-select" x-model="filterBitrate" @change="applyFilters()">
                         <option value="">All Bitrates</option>
@@ -913,6 +928,7 @@
                 ws: null,
                 activeTab: 'popular',
                 filterCountry: '',
+                filterTopic: '',
                 filterBitrate: '',
                 filterRegex: '',
                 filterRegexError: '',
@@ -954,6 +970,7 @@
                     this.searchQuery = '';
                     this.currentPage = 0;
                     this.filterCountry = '';
+                    this.filterTopic = '';
                     this.filterBitrate = '';
                     this.filterRegex = '';
                     this.filterRegexError = '';
@@ -971,6 +988,7 @@
                 async loadRecent() {
                     this.loading = true;
                     this.filterCountry = '';
+                    this.filterTopic = '';
                     this.filterBitrate = '';
                     this.filterRegex = '';
                     this.filterRegexError = '';
@@ -988,6 +1006,7 @@
                 async loadFavorites() {
                     this.loading = true;
                     this.filterCountry = '';
+                    this.filterTopic = '';
                     this.filterBitrate = '';
                     this.filterRegex = '';
                     this.filterRegexError = '';
@@ -1001,6 +1020,7 @@
                 async loadTrending() {
                     this.loading = true;
                     this.filterCountry = '';
+                    this.filterTopic = '';
                     this.filterBitrate = '';
                     this.filterRegex = '';
                     this.filterRegexError = '';
@@ -1038,6 +1058,14 @@
                             this.filterRegexError = 'Invalid regex: ' + error.message;
                             return;
                         }
+                    }
+
+                    // Apply topic filter
+                    if (this.filterTopic) {
+                        filtered = filtered.filter(s => {
+                            const tags = (s.tags || []).join(' ').toLowerCase();
+                            return tags.includes(this.filterTopic.toLowerCase());
+                        });
                     }
 
                     // Apply bitrate filter
