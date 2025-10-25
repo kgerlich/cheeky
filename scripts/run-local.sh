@@ -27,10 +27,18 @@ source "$PROJECT_DIR/venv/bin/activate"
 
 echo "[Cheeky] Starting Radio Player..."
 echo ""
+
+# Get local IP for network access
+LOCAL_IP=$(hostname -I | awk '{print $1}')
+
 echo "═════════════════════════════════════════════"
 echo "Access the application:"
-echo "  🌐 http://localhost:8000"
+echo "  🌐 This machine: http://localhost:8000"
+if [ ! -z "$LOCAL_IP" ]; then
+    echo "  🌐 Network:      http://$LOCAL_IP:8000"
+fi
 echo ""
+echo "Listening on: 0.0.0.0:8000"
 echo "Press Ctrl+C to stop the server"
 echo "═════════════════════════════════════════════"
 echo ""
