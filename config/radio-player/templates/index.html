@@ -803,6 +803,7 @@
                 <!-- Filters -->
                 <div class="filter-controls" x-show="!searchQuery">
                     <span class="filter-label">Filter:</span>
+                    <input type="text" class="filter-select" style="width: 140px;" x-model="filterRegex" @input="applyFilters()" placeholder="Regex pattern..." title="JavaScript regex to match station names">
                     <select class="filter-select" x-model="filterCountry" @change="applyFilters()">
                         <option value="">All Countries</option>
                         <option value="US">United States</option>
@@ -820,6 +821,7 @@
                         <option value="256">256+ kbps</option>
                         <option value="320">320+ kbps</option>
                     </select>
+                    <span class="filter-error" x-show="filterRegexError" style="color: #ff6b35; font-size: 0.75em; margin-left: 5px;" x-text="filterRegexError"></span>
                 </div>
             </div>
 
@@ -912,6 +914,8 @@
                 activeTab: 'popular',
                 filterCountry: '',
                 filterBitrate: '',
+                filterRegex: '',
+                filterRegexError: '',
                 allStations: [],
 
                 // Utility: Format time
@@ -951,6 +955,8 @@
                     this.currentPage = 0;
                     this.filterCountry = '';
                     this.filterBitrate = '';
+                    this.filterRegex = '';
+                    this.filterRegexError = '';
                     const result = await this.apiCall('GET', '/stations/popular?limit=20&offset=0');
 
                     if (result) {
@@ -966,6 +972,8 @@
                     this.loading = true;
                     this.filterCountry = '';
                     this.filterBitrate = '';
+                    this.filterRegex = '';
+                    this.filterRegexError = '';
                     // For now, use popular with a slight variation
                     // In a real app, this would fetch recently played stations
                     const result = await this.apiCall('GET', '/stations/popular?limit=20&offset=20');
@@ -981,6 +989,8 @@
                     this.loading = true;
                     this.filterCountry = '';
                     this.filterBitrate = '';
+                    this.filterRegex = '';
+                    this.filterRegexError = '';
                     // Show favorite stations or empty if none
                     this.allStations = this.favorites;
                     this.stations = this.favorites;
@@ -992,6 +1002,8 @@
                     this.loading = true;
                     this.filterCountry = '';
                     this.filterBitrate = '';
+                    this.filterRegex = '';
+                    this.filterRegexError = '';
                     // Use popular for trending
                     const result = await this.apiCall('GET', '/stations/popular?limit=20&offset=0');
                     if (result) {
@@ -1005,7 +1017,30 @@
                 applyFilters() {
                     // Filter stations based on selected filters
                     let filtered = this.allStations;
+                    this.filterRegexError = '';
 
+                    // Apply regex filter
+                    if (this.filterRegex.trim()) {
+                        try {
+                            // Create regex with case-insensitive flag
+                            const regex = new RegExp(this.filterRegex, 'i');
+                            filtered = filtered.filter(s => {
+                                // Match against station name, country, codec, and tags
+                                const name = s.name || '';
+                                const country = s.country || '';
+                                const codec = s.codec || '';
+                                const tags = (s.tags || []).join(' ');
+                                const searchText = `${name} ${country} ${codec} ${tags}`;
+                                return regex.test(searchText);
+                            });
+                        } catch (error) {
+                            // Show regex error
+                            this.filterRegexError = 'Invalid regex: ' + error.message;
+                            return;
+                        }
+                    }
+
+                    // Apply bitrate filter
                     if (this.filterBitrate) {
                         const minBitrate = parseInt(this.filterBitrate);
                         filtered = filtered.filter(s => (s.bitrate || 0) >= minBitrate);
