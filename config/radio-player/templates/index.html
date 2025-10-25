@@ -95,6 +95,16 @@
             0%, 100% { transform: scaleY(0.5); }
             50% { transform: scaleY(1); }
         }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
     </style>
 </head>
 <body class="bg-cheeky-dark text-cheeky-text flex flex-col h-screen overflow-hidden">
@@ -390,17 +400,22 @@
                             </template>
                         </div>
 
-                        <!-- Loading State -->
-                        <div x-show="loading" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-                            <template x-for="i in 6" :key="i">
-                                <div class="skeleton p-3 sm:p-5 h-40 sm:h-48"></div>
-                            </template>
+                        <!-- Loading State with Spinner -->
+                        <div x-show="loading" class="flex flex-col items-center justify-center py-16 sm:py-20">
+                            <div class="mb-6">
+                                <div class="spinner text-cheeky-cyan text-6xl">
+                                    ♪
+                                </div>
+                            </div>
+                            <p class="text-cheeky-text font-bold text-lg sm:text-xl mb-2">Updating Stations</p>
+                            <p class="text-cheeky-text-muted text-sm sm:text-base">Loading your favorite stations...</p>
                         </div>
 
                         <!-- Empty State -->
-                        <div x-show="stations.length === 0 && !loading" class="text-center py-12">
-                            <p class="text-cheeky-text-muted text-lg">No stations found</p>
-                            <p class="text-cheeky-text-muted text-sm mt-2">Try a different search</p>
+                        <div x-show="stations.length === 0 && !loading" class="flex flex-col items-center justify-center py-16 sm:py-20">
+                            <div class="mb-6 text-5xl">📻</div>
+                            <p class="text-cheeky-text font-bold text-lg sm:text-xl mb-2">No Stations Found</p>
+                            <p class="text-cheeky-text-muted text-sm sm:text-base max-w-xs text-center">Try a different search or browse by category</p>
                         </div>
 
                         <!-- Pagination -->
